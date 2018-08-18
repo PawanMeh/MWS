@@ -8,34 +8,285 @@ from frappe.model.document import Document
 import frappe, json, time, datetime, dateutil, math, csv, StringIO
 import amazon_mws as mws
 from frappe import _
-from frappe.core.page.background_jobs.background_jobs import get_info
+
+#Get and Create Products
+def get_products_details():
+		products = get_products_instance()
+		reports = get_reports_instance()
+
+		mws_settings = frappe.get_doc("MWS Integration Settings")
+		market_place_list = return_as_list(mws_settings.market_place_id)
+
+		for marketplace in market_place_list:
+			report_id = request_and_fetch_report_id("_GET_FLAT_FILE_OPEN_LISTINGS_DATA_", None, None, market_place_list)
+
+			if report_id:
+				listings_response = reports.get_report(report_id=report_id)
+
+				string_io = StringIO.StringIO(listings_response.original)
+				csv_rows = list(csv.reader(string_io, delimiter=str('\t')))
+				asin_list = list(set([row[1] for row in csv_rows[1:]]))
+
+				sku_asin = [{"asin":row[1],"sku":row[0]} for row in csv_rows[1:]]
+				products_response = call_mws_method(products.get_matching_product,marketplaceid=marketplace,
+					asins=asin_list)
+
+				matching_products_list = products_response.parsed 
+
+				for product in matching_products_list:
+					skus = [row["sku"] for row in sku_asin if row["asin"]==product.ASIN]
+					for sku in skus:
+						create_item_code(product, sku)
+
+		return "Success"
+
+def get_products_instance():
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+	products = mws.Products(
+			account_id = mws_settings.seller_id,
+			access_key = mws_settings.aws_access_key_id,
+			secret_key = mws_settings.secret_key,
+			region = mws_settings.region,
+			domain = mws_settings.domain
+			)
+
+	return products
+
+def get_reports_instance():
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+	reports = mws.Reports(
+			account_id = mws_settings.seller_id,
+			access_key = mws_settings.aws_access_key_id,
+			secret_key = mws_settings.secret_key,
+			region = mws_settings.region,
+			domain = mws_settings.domain
+	)
+
+	return reports
+
+#amazon list format, list method does not work in integration
+def return_as_list(input_value):
+	if type(input_value) == list:
+		return input_value
+	else:
+		return [input_value]
+
+def request_and_fetch_report_id(report_type, start_date=None, end_date=None, marketplaceids=None):
+	reports = get_reports_instance()
+	report_response = reports.request_report(report_type=report_type, 
+			start_date=start_date, 
+			end_date=end_date, 
+			marketplaceids=marketplaceids)	
+
+	#add time delay to wait for amazon to generate report
+	time.sleep(20)
+	report_request_id = report_response.parsed["ReportRequestInfo"]["ReportRequestId"]["value"]
+	generated_report_id = None
+	#poll to get generated report
+	for x in range(1,10):
+		report_request_list_response = reports.get_report_request_list(requestids=[report_request_id])
+		report_status = report_request_list_response.parsed["ReportRequestInfo"]["ReportProcessingStatus"]["value"]
+
+		if report_status == "_SUBMITTED_" or report_status == "_IN_PROGRESS_":
+			#add time delay to wait for amazon to generate report
+			time.sleep(15)
+			continue
+		elif report_status == "_CANCELLED_":
+			break
+		elif report_status == "_DONE_NO_DATA_":
+			break
+		elif report_status == "_DONE_":
+			generated_report_id =  report_request_list_response.parsed["ReportRequestInfo"]["GeneratedReportId"]["value"]
+			break
+
+	return generated_report_id
 
 def call_mws_method(mws_method, *args, **kwargs):
-	def print_message(title, message):
-		for x in xrange(1,5):
-			print (title, message)
 
 	mws_settings = frappe.get_doc("MWS Integration Settings")
-
 	max_retries = mws_settings.max_retry_limit
+
 	for x in xrange(0, max_retries):
-		print_message("Method: {0}".format(mws_method), ", Retry #: {0}".format(x))
 		try:
 			response = mws_method(*args, **kwargs)
 			return response
 		except Exception as e:
-			print_message("Error!", e)
 			delay = math.pow(4, x) * 125
 			frappe.log_error(message=e, title=str(mws_method))
-			print_message("Response has error.", "Waiting for {0} ms".format(delay))
 			time.sleep(delay)
 			continue
 
-	#setting via hooks
 	mws_settings.enable_synch = 0
 	mws_settings.save()
 
 	frappe.throw(_("Sync has been temporarily disabled because maximum retries have been exceeded"))
+
+def create_item_code(amazon_item_json, sku):
+	if frappe.db.get_value("Item", sku):
+		return
+
+	item = frappe.new_doc("Item")
+
+	new_manufacturer = create_manufacturer(amazon_item_json)
+	new_brand = create_brand(amazon_item_json)
+
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+
+	item.item_group = mws_settings.item_group
+	item.description = amazon_item_json.Product.AttributeSets.ItemAttributes.Title
+	item.item_code = sku
+	item.market_place_item_code = amazon_item_json.ASIN
+	item.brand = new_brand
+	item.manufacturer = new_manufacturer
+	item.web_long_description = amazon_item_json.Product.AttributeSets.ItemAttributes.Title
+
+	item.image = amazon_item_json.Product.AttributeSets.ItemAttributes.SmallImage.URL
+
+	temp_item_group = amazon_item_json.Product.AttributeSets.ItemAttributes.ProductGroup
+
+	item_group = frappe.db.get_value("Item Group",filters={"item_group_name": temp_item_group})
+
+	if not item_group:
+		igroup = frappe.new_doc("Item Group")
+		igroup.item_group_name = temp_item_group
+		igroup.parent_item_group =  mws_settings.item_group
+		igroup.insert()
+
+	item.insert(ignore_permissions=True)
+	new_item_price = create_item_price(amazon_item_json, item.item_code)
+
+	return item.name
+
+def create_manufacturer(amazon_item_json):
+	existing_manufacturer = frappe.db.get_value("Manufacturer",
+		filters={"short_name":amazon_item_json.Product.AttributeSets.ItemAttributes.Manufacturer})
+
+	if not existing_manufacturer:
+		manufacturer = frappe.new_doc("Manufacturer")
+		manufacturer.short_name = amazon_item_json.Product.AttributeSets.ItemAttributes.Manufacturer
+		manufacturer.insert()
+		return manufacturer.short_name
+	else:
+		return existing_manufacturer
+
+def create_brand(amazon_item_json):
+	existing_brand = frappe.db.get_value("Brand",
+		filters={"brand":amazon_item_json.Product.AttributeSets.ItemAttributes.Brand})
+	if not existing_brand:
+		brand = frappe.new_doc("Brand")
+		brand.brand = amazon_item_json.Product.AttributeSets.ItemAttributes.Brand
+		brand.insert()
+		return brand.brand
+	else:
+		return existing_brand
+
+def create_item_price(amazon_item_json, item_code):
+	item_price = frappe.new_doc("Item Price")
+	item_price.price_list = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "price_list")	
+	if not("ListPrice" in amazon_item_json.Product.AttributeSets.ItemAttributes):
+		item_price.price_list_rate = 0
+	else:
+		item_price.price_list_rate = amazon_item_json.Product.AttributeSets.ItemAttributes.ListPrice.Amount
+
+	item_price.item_code = item_code
+	item_price.insert()
+
+#Get and create Orders
+def get_orders(after_date):
+	try:
+		orders = get_orders_instance()
+		statuses = ["PartiallyShipped", "Unshipped", "Shipped", "Canceled"]
+		mws_settings = frappe.get_doc("MWS Integration Settings")
+		market_place_list = return_as_list(mws_settings.market_place_id)
+
+		orders_response = call_mws_method(orders.list_orders, marketplaceids=market_place_list, 
+			fulfillment_channels=["MFN", "AFN"], 
+			lastupdatedafter=after_date,	
+			orderstatus=statuses,
+			max_results='10')
+
+		while True:
+			orders_list = []
+
+			if "Order" in orders_response.parsed.Orders:
+				orders_list = return_as_list(orders_response.parsed.Orders.Order)
+
+			if len(orders_list) == 0:
+				break
+
+			for order in orders_list:
+				create_sales_order(order, after_date)
+
+			if not "NextToken" in orders_response.parsed:
+				break
+
+			next_token = orders_response.parsed.NextToken
+			orders_response = call_mws(orders.list_orders_by_next_token, next_token)
+
+		return "Success"
+
+	except Exception as e:
+		frappe.log_error(title="get_orders", message=e)
+
+def get_orders_instance():
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+	orders = mws.Orders(
+			account_id = mws_settings.seller_id,
+			access_key = mws_settings.aws_access_key_id,
+			secret_key = mws_settings.secret_key,
+			region= mws_settings.region,
+			domain= mws_settings.domain,
+			version="2013-09-01"
+		)
+
+	return orders
+
+def create_sales_order(order_json,after_date):
+	customer_name, contact = create_customer(order_json)
+	address = create_address(order_json, customer_name)
+
+	market_place_order_id = order_json.AmazonOrderId
+
+	so = frappe.db.get_value("Sales Order", 
+			filters={"market_place_order_id": market_place_order_id},
+			fieldname="name")
+
+	taxes_and_charges = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "taxes_charges")
+
+	if so:
+		return
+
+	if not so:
+		items, mws_items = get_order_items(market_place_order_id)
+		delivery_date = dateutil.parser.parse(order_json.LatestShipDate).strftime("%Y-%m-%d")
+		transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
+
+		so = frappe.get_doc({
+				"doctype": "Sales Order",
+				"naming_series": "SO-",
+				"market_place_order_id": market_place_order_id,
+				"marketplace_id": order_json.MarketplaceId,
+				"customer": customer_name,
+				"delivery_date": delivery_date,
+				"transaction_date": transaction_date, 
+				"items": items,
+				"company": frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
+			})
+
+		try:
+			if taxes_and_charges:
+				charges_and_fees = get_charges_and_fees(market_place_order_id)
+				for charge in charges_and_fees.get("charges"):
+					so.append('taxes', charge)
+
+				for fee in charges_and_fees.get("fees"):
+					so.append('taxes', fee)
+
+			so.insert(ignore_permissions=True)
+			so.submit()
+
+		except Exception as e:
+			frappe.log_error(message=e, title="Create Sales Order")
 
 def create_customer(order_json):
 	order_customer_name = ""
@@ -58,9 +309,7 @@ def create_customer(order_json):
 		existing_contacts = frappe.get_list("Contact", filters)
 
 		if existing_contacts:
-			print "existing contact name"
 			existing_contact_name = existing_contacts[0].name
-			print existing_contact_name
 		else:
 			new_contact = frappe.new_doc("Contact")
 			new_contact.first_name = order_customer_name
@@ -74,11 +323,12 @@ def create_customer(order_json):
 
 		return existing_customer_name, existing_contact_name
 	else:
+		mws_customer_settings = frappe.get_doc("MWS Integration Settings")
 		new_customer = frappe.new_doc("Customer")		
 		new_customer.customer_name = order_customer_name
-		new_customer.customer_group = "All Customer Groups"
-		new_customer.territory = "All Territories"
-		new_customer.customer_type = "Individual"
+		new_customer.customer_group = mws_customer_settings.customer_group
+		new_customer.territory = mws_customer_settings.territory
+		new_customer.customer_type = mws_customer_settings.customer_type
 		new_customer.save()
 
 		new_contact = frappe.new_doc("Contact")
@@ -138,89 +388,6 @@ def create_address(amazon_order_item_json, customer_name):
 		make_address.insert()
 		return make_address
 
-def create_manufacturer(amazon_item_json):
-	existing_manufacturer = frappe.db.get_value("Manufacturer",
-		filters={"short_name":amazon_item_json.Product.AttributeSets.ItemAttributes.Manufacturer})
-
-	if not existing_manufacturer:
-		manufacturer = frappe.new_doc("Manufacturer")
-		manufacturer.short_name = amazon_item_json.Product.AttributeSets.ItemAttributes.Manufacturer
-		manufacturer.insert()
-		return manufacturer.short_name
-	else:
-		return existing_manufacturer
-
-def create_brand(amazon_item_json):
-	existing_brand = frappe.db.get_value("Brand",
-		filters={"brand":amazon_item_json.Product.AttributeSets.ItemAttributes.Brand})
-	if not existing_brand:
-		brand = frappe.new_doc("Brand")
-		brand.brand = amazon_item_json.Product.AttributeSets.ItemAttributes.Brand
-		brand.insert()
-		return brand.brand
-	else:
-		return existing_brand
-
-def create_item_price(amazon_item_json, item_code):
-	item_price = frappe.new_doc("Item Price")
-	item_price.price_list = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "price_list")	
-	if not("ListPrice" in amazon_item_json.Product.AttributeSets.ItemAttributes):
-		item_price.price_list_rate = 0
-	else:
-		item_price.price_list_rate = amazon_item_json.Product.AttributeSets.ItemAttributes.ListPrice.Amount
-
-	item_price.item_code = item_code
-	item_price.insert()
-
-def create_item_code(amazon_item_json, sku):
-	print "Create Item Code"
-	print sku
-
-	if frappe.db.get_value("Item", sku):
-		return
-
-	item = frappe.new_doc("Item")
-
-	new_manufacturer = create_manufacturer(amazon_item_json)
-	new_brand = create_brand(amazon_item_json)
-
-	item.item_group = "All Item Groups"
-	item.description = amazon_item_json.Product.AttributeSets.ItemAttributes.Title
-	item.item_code = sku
-	item.market_place_item_code = amazon_item_json.ASIN
-	item.brand = new_brand
-	item.manufacturer = new_manufacturer
-	item.web_long_description = amazon_item_json.Product.AttributeSets.ItemAttributes.Title
-	item.show_in_website = 1
-
-	item.image = amazon_item_json.Product.AttributeSets.ItemAttributes.SmallImage.URL
-
-	temp_item_group = amazon_item_json.Product.AttributeSets.ItemAttributes.ProductGroup
-
-	system_item_group = frappe.db.get_value("Item Group",filters={"item_group_name": temp_item_group})
-
-	if not system_item_group:
-		igroup = frappe.new_doc("Item Group")
-		igroup.item_group_name = temp_item_group
-		igroup.parent_item_group = "All Item Groups"
-		igroup.insert()
-
-	item.append("website_item_groups",{
-		"item_group": temp_item_group
-		})
-
-	item.insert(ignore_permissions=True)
-	new_item_price = create_item_price(amazon_item_json, item.item_code)
-
-	return item.name
-
-def get_item_code(order_item):
-	asin = order_item.ASIN
-	sku = order_item.SellerSKU
-	item_code = frappe.db.get_value("Item", {"market_place_item_code": asin}, "item_code")
-	if item_code:
-		return item_code
-
 def get_order_items(market_place_order_id):
 	mws_orders = get_orders_instance()
 
@@ -262,10 +429,17 @@ def get_order_items(market_place_order_id):
 
 	return final_order_items, order_items_mws
 
+def get_item_code(order_item):
+	asin = order_item.ASIN
+	sku = order_item.SellerSKU
+	item_code = frappe.db.get_value("Item", {"market_place_item_code": asin}, "item_code")
+	if item_code:
+		return item_code
+
 def get_charges_and_fees(market_place_order_id):
 	finances = get_finances_instance()
 
-	out = {"charges":[], "fees":[]}
+	charges_fees = {"charges":[], "fees":[]}
 
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 
@@ -279,10 +453,8 @@ def get_charges_and_fees(market_place_order_id):
 
 			for charge in charges:
 				if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
-					print ("charges")
-					print charge.ChargeAmount.CurrencyAmount
 					charge_account = get_account(charge.ChargeType)
-					out.get("charges").append({
+					charges_fees.get("charges").append({
 						"charge_type":"Actual",
 						"account_head": charge_account,
 						"tax_amount": charge.ChargeAmount.CurrencyAmount,
@@ -292,165 +464,13 @@ def get_charges_and_fees(market_place_order_id):
 			for fee in fees:
 				if float(fee.FeeAmount.CurrencyAmount) != 0:
 					fee_account = get_account(fee.FeeType)
-					out.get("fees").append({
+					charges_fees.get("fees").append({
 						"charge_type":"Actual",
 						"account_head": fee_account,
 						"tax_amount": fee.FeeAmount.CurrencyAmount,
 						"description": fee.FeeType + " for " + shipment_item.SellerSKU
 					})
-
-	return out
-
-def create_sales_order(order_json,after_date,before_date):
-	customer_name, contact = create_customer(order_json)
-	address = create_address(order_json, customer_name)
-
-	market_place_order_id = order_json.AmazonOrderId
-
-	so = frappe.db.get_value("Sales Order", 
-			filters={"market_place_order_id": market_place_order_id},
-			fieldname="name")
-
-	if so:
-		return
-
-	if not so:
-		items, mws_items = get_order_items(market_place_order_id)
-		delivery_date = dateutil.parser.parse(order_json.LatestShipDate).strftime("%Y-%m-%d")
-		transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
-
-		so = frappe.get_doc({
-				"doctype": "Sales Order",
-				"naming_series": "SO-",
-				"market_place_order_id": market_place_order_id,
-				"marketplace_id": order_json.MarketplaceId,
-				"customer": customer_name,
-				"delivery_date": delivery_date,
-				"transaction_date": transaction_date, 
-				"items": items,
-				"company": frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
-			})
-
-		try:
-			charges_and_fees = get_charges_and_fees(market_place_order_id)
-			for charge in charges_and_fees.get("charges"):
-				so.append('taxes', charge)
-
-			for fee in charges_and_fees.get("fees"):
-				so.append('taxes', fee)	
-
-			so.insert(ignore_permissions=True)
-			so.submit()
-
-		except Exception as e:
-			frappe.log_error(message=e, title="Create Sales Order")
-
-def get_products_instance():
-	mws_settings = frappe.get_doc("MWS Integration Settings")
-
-	products = mws.Products(
-			account_id = mws_settings.seller_id,
-			access_key = mws_settings.aws_access_key_id,
-			secret_key = mws_settings.secret_key,
-			region = mws_settings.region,
-			domain = mws_settings.domain
-			)
-
-	return products
-
-def get_reports_instance():
-	mws_settings = frappe.get_doc("MWS Integration Settings")
-	reports = mws.Reports(
-			account_id = mws_settings.seller_id,
-			access_key = mws_settings.aws_access_key_id,
-			secret_key = mws_settings.secret_key,
-			region = mws_settings.region,
-			domain = mws_settings.domain
-	)
-
-	return reports
-
-def request_and_fetch_report_id(report_type, start_date=None, end_date=None, marketplaceids=None):
-	reports = get_reports_instance()
-	report_response = reports.request_report(report_type=report_type, 
-			start_date=start_date, 
-			end_date=end_date, 
-			marketplaceids=marketplaceids)	
-
-	#add time delay to wait for amazon to generate report
-	time.sleep(20)
-	report_request_id = report_response.parsed["ReportRequestInfo"]["ReportRequestId"]["value"]
-	generated_report_id = None
-	#poll to get generated report
-	for x in range(1,10):
-		report_request_list_response = reports.get_report_request_list(requestids=[report_request_id])
-		report_status = report_request_list_response.parsed["ReportRequestInfo"]["ReportProcessingStatus"]["value"]
-
-		if report_status == "_SUBMITTED_" or report_status == "_IN_PROGRESS_":
-			print "Report request {0} {1}.".format(report_request_id, report_status)
-			#add time delay to wait for amazon to generate report
-			time.sleep(15)
-			continue
-		elif report_status == "_CANCELLED_":
-			print "Report request {0} {1}.".format(report_request_id, report_status)
-			break
-		elif report_status == "_DONE_NO_DATA_":
-			print "Report request {0} {1}.".format(report_request_id, report_status)
-			break
-		elif report_status == "_DONE_":
-			generated_report_id =  report_request_list_response.parsed["ReportRequestInfo"]["GeneratedReportId"]["value"]
-			print "Report request {0} {1}. Generated report id : {2}".format(report_request_id, report_status, generated_report_id)
-			break
-
-	return generated_report_id
-
-def get_products_details():
-		products = get_products_instance()
-		reports = get_reports_instance()
-
-		mws_settings = frappe.get_doc("MWS Integration Settings")
-		market_place_list = return_as_list(mws_settings.market_place_id)
-
-		for marketplace in market_place_list:
-			report_id = request_and_fetch_report_id("_GET_FLAT_FILE_OPEN_LISTINGS_DATA_", None, None, market_place_list)
-
-			if report_id:
-				listings_response = reports.get_report(report_id=report_id)
-
-				#Fetch ASIN
-				string_io = StringIO.StringIO(listings_response.original)
-				csv_rows = list(csv.reader(string_io, delimiter=str('\t')))
-				asin_list = list(set([row[1] for row in csv_rows[1:]]))
-
-				#ASIN to SKU
-				sku_asin = [{"asin":row[1],"sku":row[0]} for row in csv_rows[1:]]
-
-				#Fetch Products List from ASIN
-				products_response = call_mws_method(products.get_matching_product,marketplaceid=marketplace,
-					asins=asin_list)
-
-				matching_products_list = products_response.parsed 
-
-				for product in matching_products_list:
-					#Get matching sku for ASIN
-					skus = [row["sku"] for row in sku_asin if row["asin"]==product.ASIN]
-					for sku in skus:
-						create_item_code(product, sku)
-
-		return "Success"
-
-def get_orders_instance():
-	mws_settings = frappe.get_doc("MWS Integration Settings")
-	orders = mws.Orders(
-			account_id = mws_settings.seller_id,
-			access_key = mws_settings.aws_access_key_id,
-			secret_key = mws_settings.secret_key,
-			region= mws_settings.region,
-			domain= mws_settings.domain,
-			version="2013-09-01"
-		)
-
-	return orders
+	return charges_fees
 
 def get_finances_instance():
 
@@ -467,53 +487,9 @@ def get_finances_instance():
 
 	return finances
 
-def return_as_list(input_value):
-	if type(input_value) == list:
-		return input_value
-	else:
-		return [input_value]
-
-def get_orders(after_date, before_date):
-	try:
-		orders = get_orders_instance()
-		statuses = ["PartiallyShipped", "Unshipped", "Shipped", "Canceled"]
-		mws_settings = frappe.get_doc("MWS Integration Settings")
-		market_place_list = return_as_list(mws_settings.market_place_id)
-
-		orders_response = call_mws_method(orders.list_orders, marketplaceids=market_place_list, 
-			fulfillment_channels=["MFN", "AFN"], 
-			lastupdatedafter=after_date,	
-			orderstatus=statuses,
-			max_results='10')
-
-		while True:
-			orders_list = []
-
-			if "Order" in orders_response.parsed.Orders:
-				orders_list = return_as_list(orders_response.parsed.Orders.Order)
-
-			if len(orders_list) == 0:
-				break
-
-			for order in orders_list:
-				print "order list"
-				print orders_list
-				create_sales_order(order, after_date, before_date)
-
-			if not "NextToken" in orders_response.parsed:
-				break
-
-			next_token = orders_response.parsed.NextToken
-			orders_response = call_mws(orders.list_orders_by_next_token, next_token)
-
-		return "Success"
-
-	except Exception as e:
-		frappe.log_error(title="get_orders", message=e)
-
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})
-	out = existing_account
+	account_name = existing_account
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 
 	if not existing_account:
@@ -523,14 +499,8 @@ def get_account(name):
 			new_account.company = mws_settings.company
 			new_account.parent_account = mws_settings.market_place_account_group
 			new_account.insert(ignore_permissions=True)
-			out = new_account.name
+			account_name = new_account.name
 		except Exception as e:
 			frappe.log_error(message=e, title="Create Account")
 
-	return out
-
-def queue_running(job_name):
-	queue_info = get_info()
-	queue_by_job_name = [queue for queue in queue_info if queue.get("job_name")==job_name]
-	return queue_by_job_name and len(queue_by_job_name) > 0 and queue_by_job_name[0].get("status") in ["started", "queued"]
-
+	return account_name
