@@ -321,7 +321,6 @@ def create_customer(order_json):
 		else:
 			new_contact = frappe.new_doc("Contact")
 			new_contact.first_name = order_customer_name
-			new_contact.email_id = order_json.BuyerEmail
 			new_contact.append('links', {
 				"link_doctype": "Customer",
 				"link_name": existing_customer_name
