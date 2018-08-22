@@ -26,17 +26,21 @@ def get_products_details():
 				string_io = StringIO.StringIO(listings_response.original)
 				csv_rows = list(csv.reader(string_io, delimiter=str('\t')))
 				asin_list = list(set([row[1] for row in csv_rows[1:]]))
+				#break into chunks of 10
+				asin_chunked_list = list(chunks(asin_list, 10))
 
 				sku_asin = [{"asin":row[1],"sku":row[0]} for row in csv_rows[1:]]
-				products_response = call_mws_method(products.get_matching_product,marketplaceid=marketplace,
-					asins=asin_list)
 
-				matching_products_list = products_response.parsed 
+				for asin_list in asin_chunked_list:
+					products_response = call_mws_method(products.get_matching_product,marketplaceid=marketplace,
+						asins=asin_list)
 
-				for product in matching_products_list:
-					skus = [row["sku"] for row in sku_asin if row["asin"]==product.ASIN]
-					for sku in skus:
-						create_item_code(product, sku)
+					matching_products_list = products_response.parsed 
+
+					for product in matching_products_list:
+						skus = [row["sku"] for row in sku_asin if row["asin"]==product.ASIN]
+						for sku in skus:
+							create_item_code(product, sku)
 
 		return "Success"
 
@@ -70,6 +74,10 @@ def return_as_list(input_value):
 		return input_value
 	else:
 		return [input_value]
+
+def chunks(l, n):
+	for i in range(0, len(l), n):
+		yield l[i:i+n]
 
 def request_and_fetch_report_id(report_type, start_date=None, end_date=None, marketplaceids=None):
 	reports = get_reports_instance()
@@ -112,7 +120,8 @@ def call_mws_method(mws_method, *args, **kwargs):
 			return response
 		except Exception as e:
 			delay = math.pow(4, x) * 125
-			frappe.log_error(message=e, title=str(mws_method))
+			mws_method_string = str(mws_method)
+			frappe.log_error(message=e, title=mws_method_string[:135])
 			time.sleep(delay)
 			continue
 
@@ -136,10 +145,12 @@ def create_item_code(amazon_item_json, sku):
 	item.description = amazon_item_json.Product.AttributeSets.ItemAttributes.Title
 	item.item_code = sku
 	item.market_place_item_code = amazon_item_json.ASIN
+	print "Item Code Creation"
+	print sku
+	print item.market_place_item_code
 	item.brand = new_brand
 	item.manufacturer = new_manufacturer
 	item.web_long_description = amazon_item_json.Product.AttributeSets.ItemAttributes.Title
-
 	item.image = amazon_item_json.Product.AttributeSets.ItemAttributes.SmallImage.URL
 
 	temp_item_group = amazon_item_json.Product.AttributeSets.ItemAttributes.ProductGroup
@@ -257,7 +268,9 @@ def create_sales_order(order_json,after_date):
 		return
 
 	if not so:
+		print "get so data"
 		items, mws_items = get_order_items(market_place_order_id)
+		print items
 		delivery_date = dateutil.parser.parse(order_json.LatestShipDate).strftime("%Y-%m-%d")
 		transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
 
@@ -435,6 +448,17 @@ def get_item_code(order_item):
 	item_code = frappe.db.get_value("Item", {"market_place_item_code": asin}, "item_code")
 	if item_code:
 		return item_code
+	else:
+		item = frappe.new_doc("Item")
+		mws_settings = frappe.get_doc("MWS Integration Settings")
+
+		item.item_group = mws_settings.item_group
+		item.description = sku
+		item.item_code = sku
+		item.market_place_item_code = asin
+		item.insert(ignore_permissions=True)
+
+		return item.item_code
 
 def get_charges_and_fees(market_place_order_id):
 	finances = get_finances_instance()
