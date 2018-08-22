@@ -145,9 +145,6 @@ def create_item_code(amazon_item_json, sku):
 	item.description = amazon_item_json.Product.AttributeSets.ItemAttributes.Title
 	item.item_code = sku
 	item.market_place_item_code = amazon_item_json.ASIN
-	print "Item Code Creation"
-	print sku
-	print item.market_place_item_code
 	item.brand = new_brand
 	item.manufacturer = new_manufacturer
 	item.web_long_description = amazon_item_json.Product.AttributeSets.ItemAttributes.Title
@@ -268,9 +265,7 @@ def create_sales_order(order_json,after_date):
 		return
 
 	if not so:
-		print "get so data"
 		items, mws_items = get_order_items(market_place_order_id)
-		print items
 		delivery_date = dateutil.parser.parse(order_json.LatestShipDate).strftime("%Y-%m-%d")
 		transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
 
