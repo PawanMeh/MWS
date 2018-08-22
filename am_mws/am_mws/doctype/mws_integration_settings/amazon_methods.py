@@ -421,7 +421,7 @@ def get_order_items(market_place_order_id):
 				"description": order_item.Title,
 				"rate": price,
 				"qty": order_item.QuantityOrdered,
-				"stock_uom": "Nos",
+				"stock_uom": "Each",
 				"warehouse": warehouse,
 				"conversion_factor": "1.0"
 			})
