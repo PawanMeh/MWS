@@ -211,7 +211,7 @@ def get_orders(after_date):
 			fulfillment_channels=["MFN", "AFN"], 
 			lastupdatedafter=after_date,	
 			orderstatus=statuses,
-			max_results='10')
+			max_results='50')
 
 		while True:
 			orders_list = []
@@ -340,7 +340,6 @@ def create_customer(order_json):
 
 		new_contact = frappe.new_doc("Contact")
 		new_contact.first_name = order_customer_name
-		new_contact.email_id = order_json.BuyerEmail
 		new_contact.append('links', {
 			"link_doctype": "Customer",
 			"link_name": new_customer.name
@@ -463,31 +462,32 @@ def get_charges_and_fees(market_place_order_id):
 
 	shipment_event_list = return_as_list(response.parsed.FinancialEvents.ShipmentEventList)
 	for shipment_event in shipment_event_list:
-		shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemList.ShipmentItem)
+		if shipment_event:
+			shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemList.ShipmentItem)
 
-		for shipment_item in shipment_item_list:
-			charges = return_as_list(shipment_item.ItemChargeList.ChargeComponent)
-			fees = return_as_list(shipment_item.ItemFeeList.FeeComponent)
+			for shipment_item in shipment_item_list:
+				charges = return_as_list(shipment_item.ItemChargeList.ChargeComponent)
+				fees = return_as_list(shipment_item.ItemFeeList.FeeComponent)
 
-			for charge in charges:
-				if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
-					charge_account = get_account(charge.ChargeType)
-					charges_fees.get("charges").append({
-						"charge_type":"Actual",
-						"account_head": charge_account,
-						"tax_amount": charge.ChargeAmount.CurrencyAmount,
-						"description": charge.ChargeType + " for " + shipment_item.SellerSKU
-					})
+				for charge in charges:
+					if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
+						charge_account = get_account(charge.ChargeType)
+						charges_fees.get("charges").append({
+							"charge_type":"Actual",
+							"account_head": charge_account,
+							"tax_amount": charge.ChargeAmount.CurrencyAmount,
+							"description": charge.ChargeType + " for " + shipment_item.SellerSKU
+						})
 
-			for fee in fees:
-				if float(fee.FeeAmount.CurrencyAmount) != 0:
-					fee_account = get_account(fee.FeeType)
-					charges_fees.get("fees").append({
-						"charge_type":"Actual",
-						"account_head": fee_account,
-						"tax_amount": fee.FeeAmount.CurrencyAmount,
-						"description": fee.FeeType + " for " + shipment_item.SellerSKU
-					})
+				for fee in fees:
+					if float(fee.FeeAmount.CurrencyAmount) != 0:
+						fee_account = get_account(fee.FeeType)
+						charges_fees.get("fees").append({
+							"charge_type":"Actual",
+							"account_head": fee_account,
+							"tax_amount": fee.FeeAmount.CurrencyAmount,
+							"description": fee.FeeType + " for " + shipment_item.SellerSKU
+						})
 	return charges_fees
 
 def get_finances_instance():
