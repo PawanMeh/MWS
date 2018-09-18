@@ -229,12 +229,50 @@ def get_orders(after_date):
 				break
 
 			next_token = orders_response.parsed.NextToken
-			orders_response = call_mws(orders.list_orders_by_next_token, next_token)
+			orders_response = call_mws_method(orders.list_orders_by_next_token, next_token)
 
 		return "Success"
 
 	except Exception as e:
 		frappe.log_error(title="get_orders", message=e)
+
+#Get and create Orders
+def get_order_create_invoice(after_date):
+	try:
+		orders = get_orders_instance()
+		statuses = ["PartiallyShipped", "Unshipped", "Shipped", "Canceled"]
+		mws_settings = frappe.get_doc("MWS Integration Settings")
+		market_place_list = return_as_list(mws_settings.market_place_id)
+
+		orders_response = call_mws_method(orders.list_orders, marketplaceids=market_place_list, 
+			fulfillment_channels=["MFN", "AFN"], 
+			lastupdatedafter=after_date,	
+			orderstatus=statuses,
+			max_results='50')
+
+		while True:
+			orders_list = []
+
+			if "Order" in orders_response.parsed.Orders:
+				orders_list = return_as_list(orders_response.parsed.Orders.Order)
+
+			if len(orders_list) == 0:
+				break
+
+			for order in orders_list:
+				create_sales_invoice(order, after_date)
+
+			if not "NextToken" in orders_response.parsed:
+				break
+
+			next_token = orders_response.parsed.NextToken
+			orders_response = call_mws_method(orders.list_orders_by_next_token, next_token)
+
+		return "Success"
+
+	except Exception as e:
+		frappe.log_error(title="get_orders", message=e)
+
 
 def get_orders_instance():
 	mws_settings = frappe.get_doc("MWS Integration Settings")
@@ -293,6 +331,60 @@ def create_sales_order(order_json,after_date):
 			so.insert(ignore_permissions=True)
 			so.submit()
 
+		except Exception as e:
+			frappe.log_error(message=e, title="Create Sales Order")
+
+def create_sales_invoice(order_json,after_date):
+	customer_name, contact = create_customer(order_json)
+	address = create_address(order_json, customer_name)
+
+	market_place_order_id = order_json.AmazonOrderId
+
+	si = frappe.db.get_value("Sales Invoice", 
+			filters={"market_place_order_id": market_place_order_id},
+			fieldname="name")
+
+	taxes_and_charges = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "taxes_charges")
+
+	if si:
+		return
+
+	if not si:
+		items, mws_items = get_order_items(market_place_order_id)
+		delivery_date = dateutil.parser.parse(order_json.LatestShipDate).strftime("%Y-%m-%d")
+		transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
+
+		si = frappe.get_doc({
+				"doctype": "Sales Invoice",
+				"naming_series": frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", ",mws_invoice_series"),
+				"market_place_order_id": market_place_order_id,
+				"customer": customer_name,
+				"delivery_date": delivery_date,
+				"transaction_date": transaction_date, 
+				"items": items,
+				"company": frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
+			})
+
+		try:
+			if taxes_and_charges:
+				charges_and_fees = get_charges_and_fees(market_place_order_id)
+				for charge in charges_and_fees.get("charges"):
+					si.append('taxes', charge)
+
+				for fee in charges_and_fees.get("fees"):
+					si.append('taxes', fee)
+
+			si.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
+			#payment info
+			si.save(ignore_permissions=True)
+			si.is_pos = 1
+			mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
+			si.append('payments', {"mode_of_payment": mode_of_payment, 
+									"amount": si.outstanding_amount, 
+									"base_amount":si.outstanding_amount})
+			si.paid_amount = si.outstanding_amount
+			si.save(ignore_permissions=True)
+			
 		except Exception as e:
 			frappe.log_error(message=e, title="Create Sales Order")
 

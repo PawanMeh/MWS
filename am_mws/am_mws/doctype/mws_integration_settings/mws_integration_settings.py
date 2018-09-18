@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 import dateutil
-from amazon_methods import get_products_details, get_orders
+from amazon_methods import get_products_details, get_orders, get_order_create_invoice
 
 class MWSIntegrationSettings(Document):
 	def get_products_details(self):
@@ -16,8 +16,17 @@ class MWSIntegrationSettings(Document):
 		after_date = dateutil.parser.parse(self.after_date).strftime("%Y-%m-%d")
 		orders = get_orders(after_date = after_date)
 
+	def get_order_create_invoice(self):
+		after_date = dateutil.parser.parse(self.after_date).strftime("%Y-%m-%d")
+		invoices = get_order_create_invoice(after_date = after_date)
+
 def schedule_get_order_details():
 	mws_settings = frappe.get_doc("MWS Integration Settings")
-	if mws_settings.enable_synch:
+
+	if mws_settings.enable_synch and not import_as_sales_invoice:
 		after_date = dateutil.parser.parse(mws_settings.after_date).strftime("%Y-%m-%d")
 		orders = get_orders(after_date = after_date)
+
+	if mws_settings.enable_synch and import_as_sales_invoice:
+		after_date = dateutil.parser.parse(mws_settings.after_date).strftime("%Y-%m-%d")
+		sales_invoices = get_order_create_invoice(after_date = after_date)
