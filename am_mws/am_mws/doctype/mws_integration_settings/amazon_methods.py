@@ -339,6 +339,7 @@ def create_sales_invoice(order_json,after_date):
 	address = create_address(order_json, customer_name)
 
 	market_place_order_id = order_json.AmazonOrderId
+	transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
 
 	si = frappe.db.get_value("Sales Invoice", 
 			filters={"market_place_order_id": market_place_order_id},
@@ -356,8 +357,11 @@ def create_sales_invoice(order_json,after_date):
 
 		si = frappe.get_doc({
 				"doctype": "Sales Invoice",
-				"naming_series": frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", ",mws_invoice_series"),
 				"market_place_order_id": market_place_order_id,
+				"naming_series":frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mws_invoice_series"),
+				"is_pos": 1,
+				"set_posting_time": 1,
+				"posting_date": transaction_date,
 				"customer": customer_name,
 				"delivery_date": delivery_date,
 				"transaction_date": transaction_date, 
@@ -377,7 +381,6 @@ def create_sales_invoice(order_json,after_date):
 			si.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
 			#payment info
 			si.save(ignore_permissions=True)
-			si.is_pos = 1
 			mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
 			si.append('payments', {"mode_of_payment": mode_of_payment, 
 									"amount": si.outstanding_amount, 
