@@ -389,7 +389,7 @@ def create_sales_invoice(order_json,after_date):
 			si.save(ignore_permissions=True)
 			
 		except Exception as e:
-			frappe.log_error(message=e, title="Create Sales Order")
+			frappe.log_error(message=e, title="Create Sales Invoice")
 
 def create_customer(order_json):
 	order_customer_name = ""
