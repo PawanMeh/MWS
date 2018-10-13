@@ -271,7 +271,7 @@ def get_order_create_invoice(after_date):
 		return "Success"
 
 	except Exception as e:
-		frappe.log_error(title="get_orders", message=e)
+		frappe.log_error(title="create_invoice", message=e)
 
 
 def get_orders_instance():
