@@ -533,7 +533,7 @@ def get_order_items(market_place_order_id):
 def get_item_code(order_item):
 	asin = order_item.ASIN
 	sku = order_item.SellerSKU
-	item_code = frappe.db.get_value("Item", {"market_place_item_code": asin}, "item_code")
+	item_code = frappe.db.get_value("Item", {"item_code": sku}, "item_code")
 	if item_code:
 		return item_code
 	else:
