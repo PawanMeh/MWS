@@ -355,7 +355,7 @@ def create_sales_invoice(order_json,after_date):
 		delivery_date = dateutil.parser.parse(order_json.LatestShipDate).strftime("%Y-%m-%d")
 		transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
 
-		si = frappe.get_doc({
+		si_doc = frappe.get_doc({
 				"doctype": "Sales Invoice",
 				"market_place_order_id": market_place_order_id,
 				"naming_series":frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mws_invoice_series"),
@@ -373,20 +373,20 @@ def create_sales_invoice(order_json,after_date):
 			if taxes_and_charges:
 				charges_and_fees = get_charges_and_fees(market_place_order_id)
 				for charge in charges_and_fees.get("charges"):
-					si.append('taxes', charge)
+					si_doc.append('taxes', charge)
 
 				for fee in charges_and_fees.get("fees"):
-					si.append('taxes', fee)
+					si_doc.append('taxes', fee)
 
-			si.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
+			si_doc.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
 			#payment info
-			si.save(ignore_permissions=True)
+			si_doc.save(ignore_permissions=True)
 			mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
-			si.append('payments', {"mode_of_payment": mode_of_payment, 
+			si_doc.append('payments', {"mode_of_payment": mode_of_payment, 
 									"amount": si.outstanding_amount, 
 									"base_amount":si.outstanding_amount})
-			si.paid_amount = si.outstanding_amount
-			si.save(ignore_permissions=True)
+			si_doc.paid_amount = si.outstanding_amount
+			si_doc.save(ignore_permissions=True)
 			
 		except Exception as e:
 			frappe.log_error(message=e, title="Create Sales Invoice")
