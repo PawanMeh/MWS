@@ -383,9 +383,9 @@ def create_sales_invoice(order_json,after_date):
 			si_doc.save(ignore_permissions=True)
 			mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
 			si_doc.append('payments', {"mode_of_payment": mode_of_payment, 
-									"amount": si.outstanding_amount, 
-									"base_amount":si.outstanding_amount})
-			si_doc.paid_amount = si.outstanding_amount
+									"amount": si_doc.outstanding_amount, 
+									"base_amount":si_doc.outstanding_amount})
+			si_doc.paid_amount = si_doc.outstanding_amount
 			si_doc.save(ignore_permissions=True)
 			
 		except Exception as e:
