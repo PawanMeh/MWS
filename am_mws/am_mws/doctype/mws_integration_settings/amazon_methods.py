@@ -498,7 +498,7 @@ def get_order_items(market_place_order_id):
 	order_items_list = return_as_list(order_items_response.parsed.OrderItems.OrderItem)
 	order_items_mws = order_items_list
 
-	warehouse = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "warehouse")
+	def_warehouse = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "warehouse")
 
 	while True:
 		for order_item in order_items_list:
@@ -508,8 +508,15 @@ def get_order_items(market_place_order_id):
 			else:
 				price = order_item.ItemPrice.Amount
 
+			item_code = get_item_code(order_item)
+			item_values = frappe.db.get_value("Item", {"item_code": item_code}, ["seller_fulfilled_item", "default_warehouse"])
+			if item_values[0] and item_values[1]:
+				warehouse = item_values[1]
+			else:
+				warehouse = def_warehouse
+
 			final_order_items.append({
-				"item_code": get_item_code(order_item),
+				"item_code": item_code,
 				"item_name": order_item.SellerSKU,
 				"description": order_item.Title,
 				"rate": price,
