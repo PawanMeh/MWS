@@ -579,24 +579,25 @@ def get_charges_and_fees(market_place_order_id):
 					fees = []
 
 				for charge in charges:
-						if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
-							charge_account = get_account(charge.ChargeType)
-							charges_fees.get("charges").append({
-								"charge_type":"Actual",
-								"account_head": charge_account,
-								"tax_amount": charge.ChargeAmount.CurrencyAmount,
-								"description": charge.ChargeType + " for " + shipment_item.SellerSKU
-							})
+					if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
+						charge_account = get_account(charge.ChargeType)
+						charges_fees.get("charges").append({
+							"charge_type":"Actual",
+							"account_head": charge_account,
+							"tax_amount": charge.ChargeAmount.CurrencyAmount,
+							"description": charge.ChargeType + " for " + shipment_item.SellerSKU
+						})
 
 				for fee in fees:
-						if float(fee.FeeAmount.CurrencyAmount) != 0:
-							fee_account = get_account(fee.FeeType)
-							charges_fees.get("fees").append({
-								"charge_type":"Actual",
-								"account_head": fee_account,
-								"tax_amount": fee.FeeAmount.CurrencyAmount,
-								"description": fee.FeeType + " for " + shipment_item.SellerSKU
-							})
+					if float(fee.FeeAmount.CurrencyAmount) != 0:
+						fee_account = get_account(fee.FeeType)
+						charges_fees.get("fees").append({
+							"charge_type":"Actual",
+							"account_head": fee_account,
+							"tax_amount": fee.FeeAmount.CurrencyAmount,
+							"description": fee.FeeType + " for " + shipment_item.SellerSKU
+						})
+
 	return charges_fees
 
 def get_finances_instance():
