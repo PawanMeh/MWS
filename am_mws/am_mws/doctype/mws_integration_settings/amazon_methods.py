@@ -389,7 +389,7 @@ def create_sales_invoice(order_json,after_date):
 			si_doc.save(ignore_permissions=True)
 			
 		except Exception as e:
-			frappe.log_error(message=e, title="Create Sales Invoice")
+			frappe.log_error(message=e, title="Create Sales Invoice" + " for Order ID " + market_place_order_id)
 
 def create_customer(order_json):
 	order_customer_name = ""
@@ -568,28 +568,35 @@ def get_charges_and_fees(market_place_order_id):
 			shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemList.ShipmentItem)
 
 			for shipment_item in shipment_item_list:
-				charges = return_as_list(shipment_item.ItemChargeList.ChargeComponent)
-				fees = return_as_list(shipment_item.ItemFeeList.FeeComponent)
+				if 'ItemChargeList' in shipment_item.keys():
+					charges = return_as_list(shipment_item.ItemChargeList.ChargeComponent)
+				else:
+					charges = []
+
+				if 'ItemFeeList' in shipment_item.keys():
+					fees = return_as_list(shipment_item.ItemFeeList.FeeComponent)
+				else:
+					fees = []
 
 				for charge in charges:
-					if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
-						charge_account = get_account(charge.ChargeType)
-						charges_fees.get("charges").append({
-							"charge_type":"Actual",
-							"account_head": charge_account,
-							"tax_amount": charge.ChargeAmount.CurrencyAmount,
-							"description": charge.ChargeType + " for " + shipment_item.SellerSKU
-						})
+						if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
+							charge_account = get_account(charge.ChargeType)
+							charges_fees.get("charges").append({
+								"charge_type":"Actual",
+								"account_head": charge_account,
+								"tax_amount": charge.ChargeAmount.CurrencyAmount,
+								"description": charge.ChargeType + " for " + shipment_item.SellerSKU
+							})
 
 				for fee in fees:
-					if float(fee.FeeAmount.CurrencyAmount) != 0:
-						fee_account = get_account(fee.FeeType)
-						charges_fees.get("fees").append({
-							"charge_type":"Actual",
-							"account_head": fee_account,
-							"tax_amount": fee.FeeAmount.CurrencyAmount,
-							"description": fee.FeeType + " for " + shipment_item.SellerSKU
-						})
+						if float(fee.FeeAmount.CurrencyAmount) != 0:
+							fee_account = get_account(fee.FeeType)
+							charges_fees.get("fees").append({
+								"charge_type":"Actual",
+								"account_head": fee_account,
+								"tax_amount": fee.FeeAmount.CurrencyAmount,
+								"description": fee.FeeType + " for " + shipment_item.SellerSKU
+							})
 	return charges_fees
 
 def get_finances_instance():
