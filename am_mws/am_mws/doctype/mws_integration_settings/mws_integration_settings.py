@@ -23,10 +23,10 @@ class MWSIntegrationSettings(Document):
 def schedule_get_order_details():
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 
-	if mws_settings.enable_synch and not import_as_sales_invoice:
+	if mws_settings.enable_synch and not mws_settings.import_as_sales_invoice:
 		after_date = dateutil.parser.parse(mws_settings.after_date).strftime("%Y-%m-%d")
 		orders = get_orders(after_date = after_date)
 
-	if mws_settings.enable_synch and import_as_sales_invoice:
+	if mws_settings.enable_synch and mws_settings.import_as_sales_invoice:
 		after_date = dateutil.parser.parse(mws_settings.after_date).strftime("%Y-%m-%d")
 		sales_invoices = get_order_create_invoice(after_date = after_date)
