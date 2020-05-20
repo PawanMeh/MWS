@@ -583,9 +583,7 @@ def get_charges_and_fees(market_place_order_id):
 					fees = []
 
 				if 'ItemTaxWithheldList' in shipment_item.keys():
-					taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent)
-					for tax in taxes_witheld:
-						frappe.msgprint(tax)
+					taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent.TaxesWithheld.ChargeComponent)
 				else:
 					taxes_witheld = []
 
@@ -610,6 +608,7 @@ def get_charges_and_fees(market_place_order_id):
 						})
 				#marketplace facilitator tax
 				for tax in taxes_witheld:
+					frappe.msgprint(tax)
 					if(tax.ChargeType == "MarketplaceFacilitatorTax-Principal"):
 						mws_settings = frappe.get_doc("MWS Integration Settings")
 						tax_account = mws_settings.market_place_tax_account
