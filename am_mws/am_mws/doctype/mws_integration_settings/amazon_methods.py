@@ -584,6 +584,10 @@ def get_charges_and_fees(market_place_order_id):
 
 				if 'ItemTaxWithheldList' in shipment_item.keys():
 					taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent.TaxesWithheld.ChargeComponent)
+					frappe.msgprint("taxes witheld")
+					print(taxes_witheld)
+				else:
+					taxes_witheld = []
 
 				for charge in charges:
 					if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
@@ -609,8 +613,6 @@ def get_charges_and_fees(market_place_order_id):
 					if(tax.ChargeType == "MarketplaceFacilitatorTax-Principal"):
 						mws_settings = frappe.get_doc("MWS Integration Settings")
 						tax_account = mws_settings.market_place_tax_account
-						frappe.msgprint("tax")
-						frappe.msgprint(tax)
 						charges_fees.get("taxwitheld").append({
 							"charge_type":"Actual",
 							"account_head": tax_account,
