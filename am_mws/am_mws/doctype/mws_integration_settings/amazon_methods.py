@@ -583,9 +583,9 @@ def get_charges_and_fees(market_place_order_id):
 					fees = []
 
 				if 'ItemTaxWithheldList' in shipment_item.keys():
-					taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent.TaxesWithheld.ChargeComponent)
-					frappe.msgprint("taxes witheld")
-					print(taxes_witheld)
+					taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent)
+					for tax in taxes_witheld:
+						frappe.msgprint(tax)
 				else:
 					taxes_witheld = []
 
