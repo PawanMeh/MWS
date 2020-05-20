@@ -581,7 +581,7 @@ def get_charges_and_fees(market_place_order_id):
 				else:
 					fees = []
 
-				if 'ItemTaxWithheldList' in shipment_item.keys():ChargeComponent:
+				if 'ItemTaxWithheldList' in shipment_item.keys():
 					taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent.TaxesWithheld.ChargeComponent)
 
 				for charge in charges:
