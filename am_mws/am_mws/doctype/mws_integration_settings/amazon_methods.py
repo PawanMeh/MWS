@@ -330,7 +330,6 @@ def create_sales_order(order_json,after_date):
 
 				for tax in charges_and_fees.get("taxwithheld"):
 					so.append('taxes', tax)
-					frappe.msgprint("tax end 2")
 
 			so.insert(ignore_permissions=True)
 			so.submit()
@@ -583,7 +582,7 @@ def get_charges_and_fees(market_place_order_id):
 					fees = []
 
 				if 'ItemTaxWithheldList' in shipment_item.keys():
-					taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent.TaxesWithheld.ChargeComponent)
+					taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent)
 				else:
 					taxes_witheld = []
 
@@ -608,14 +607,14 @@ def get_charges_and_fees(market_place_order_id):
 						})
 				#marketplace facilitator tax
 				for tax in taxes_witheld:
-					if(tax.ChargeType == "MarketplaceFacilitatorTax-Principal"):
+					if(tax.TaxesWithheld.ChargeComponent.ChargeType == "MarketplaceFacilitatorTax-Principal"):
 						mws_settings = frappe.get_doc("MWS Integration Settings")
 						tax_account = mws_settings.market_place_tax_account
 						charges_fees.get("taxwitheld").append({
 							"charge_type":"Actual",
 							"account_head": tax_account,
-							"tax_amount": tax.ChargeAmount.CurrencyAmount,
-							"description": tax.ChargeType + " for " + shipment_item.SellerSKU
+							"tax_amount": tax.TaxesWithheld.ChargeComponent.ChargeAmount.CurrencyAmount,
+							"description": tax.TaxesWithheld.ChargeComponent.ChargeType + " for " + shipment_item.SellerSKU
 						})
 						frappe.msgprint("tax end 1")
 	return charges_fees
