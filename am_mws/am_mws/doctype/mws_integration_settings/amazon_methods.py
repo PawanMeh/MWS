@@ -292,6 +292,7 @@ def create_sales_order(order_json,after_date):
 	address = create_address(order_json, customer_name)
 
 	market_place_order_id = order_json.AmazonOrderId
+	fulfillment_channel = order_json.FulfillmentChannel
 
 	so = frappe.db.get_value("Sales Order", 
 			filters={"market_place_order_id": market_place_order_id},
@@ -303,7 +304,7 @@ def create_sales_order(order_json,after_date):
 		return
 
 	if not so:
-		items, mws_items = get_order_items(market_place_order_id)
+		items, mws_items = get_order_items(market_place_order_id, fulfillment_channel)
 		delivery_date = dateutil.parser.parse(order_json.LatestShipDate).strftime("%Y-%m-%d")
 		transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
 
@@ -342,6 +343,7 @@ def create_sales_invoice(order_json,after_date):
 	address = create_address(order_json, customer_name)
 
 	market_place_order_id = order_json.AmazonOrderId
+	fulfillment_channel = order_json.FulfillmentChannel
 	transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
 
 	si = frappe.db.get_value("Sales Invoice", 
@@ -354,7 +356,7 @@ def create_sales_invoice(order_json,after_date):
 		return
 
 	if not si:
-		items, mws_items = get_order_items(market_place_order_id)
+		items, mws_items = get_order_items(market_place_order_id, fulfillment_channel)
 		delivery_date = dateutil.parser.parse(order_json.LatestShipDate).strftime("%Y-%m-%d")
 		transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
 
@@ -492,7 +494,7 @@ def create_address(amazon_order_item_json, customer_name):
 		make_address.insert()
 		return make_address
 
-def get_order_items(market_place_order_id):
+def get_order_items(market_place_order_id, fulfillment_channel):
 	mws_orders = get_orders_instance()
 
 	order_items_response = call_mws_method(mws_orders.list_order_items, amazon_order_id=market_place_order_id)
@@ -502,6 +504,7 @@ def get_order_items(market_place_order_id):
 	order_items_mws = order_items_list
 
 	def_warehouse = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "warehouse")
+	mfn_warehouse = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mfn_warehouse")
 
 	while True:
 		for order_item in order_items_list:
@@ -517,6 +520,8 @@ def get_order_items(market_place_order_id):
 				warehouse = item_values[1]
 			else:
 				warehouse = def_warehouse
+			if fulfillment_channel == "MFN":
+				warehouse = mfn_warehouse
 
 			final_order_items.append({
 				"item_code": item_code,
