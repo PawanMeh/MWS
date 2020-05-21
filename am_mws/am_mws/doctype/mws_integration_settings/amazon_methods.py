@@ -329,9 +329,8 @@ def create_sales_order(order_json,after_date):
 					so.append('taxes', fee)
 
 				for tax in charges_and_fees.get("taxwithheld"):
-					if tax:
-						frappe.msgprint("SO Tax Append")
-						frappe.msgprint(tax)
+					so.append('taxes', tax)
+					frappe.msgprint("tax end 2")
 
 			so.insert(ignore_permissions=True)
 			so.submit()
@@ -612,14 +611,13 @@ def get_charges_and_fees(market_place_order_id):
 					if(tax.ChargeType == "MarketplaceFacilitatorTax-Principal"):
 						mws_settings = frappe.get_doc("MWS Integration Settings")
 						tax_account = mws_settings.market_place_tax_account
-						frappe.msgprint(tax.ChargeAmount.CurrencyAmount)
-						frappe.msgprint(tax.ChargeType)
 						charges_fees.get("taxwitheld").append({
 							"charge_type":"Actual",
 							"account_head": tax_account,
 							"tax_amount": tax.ChargeAmount.CurrencyAmount,
 							"description": tax.ChargeType + " for " + shipment_item.SellerSKU
 						})
+						frappe.msgprint("tax end 1")
 	return charges_fees
 
 def get_finances_instance():
