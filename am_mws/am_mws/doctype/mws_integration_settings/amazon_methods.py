@@ -648,8 +648,7 @@ def get_order_create_label_jv(after_date):
 		if not je_exists:
 			fees_dict = get_postal_fees(order['market_place_order_id'])
 			#create JV
-			if flt(fees_dict.get('fees')) > flt(0.0):
-				jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees_dict.get('fees') * -1)
+			jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees_dict.get('fees') * -1)
 
 def create_jv(market_place_order_id, transaction_date, fees):
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
@@ -680,7 +679,10 @@ def create_jv(market_place_order_id, transaction_date, fees):
 	})
 	try:
 		je_doc.insert(ignore_permissions=True)
-		return je_doc.name
+		if je_doc.total_debit == 0 and je_doc.total_credit == 0:
+			frappe.delete_doc('Journal Entry', je_doc.name)
+		else:
+			return je_doc.name
 	except Exception as e:
 		frappe.log_error(message=e, title="JV Error" + je_doc.cheque_no + je_doc.posting_date)
 
