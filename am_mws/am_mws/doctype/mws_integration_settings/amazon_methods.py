@@ -311,7 +311,7 @@ def create_sales_order(order_json,after_date):
 		so = frappe.get_doc({
 				"doctype": "Sales Order",
 				"naming_series": "SO-",
-				"market_place_order_id": market_place_order_id,
+				"market_place_order_id": order_json.AmazonOrderId,
 				"marketplace_id": order_json.MarketplaceId,
 				"customer": customer_name,
 				"delivery_date": delivery_date,
