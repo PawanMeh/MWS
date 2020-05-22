@@ -647,17 +647,15 @@ def get_order_create_label_jv(after_date):
 					''', (order['market_place_order_id']))
 		if not je_exists:
 			fees = get_postal_fees(order['market_place_order_id'])
-			frappe.msgprint("je not exists")
 			#create JV
-			if fees > 0:
-				jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees * -1)
+			if fees[0] > 0:
+				frappe.msgprint("create jv")
+				jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees[0] * -1)
 
 def create_jv(market_place_order_id, transaction_date, fees):
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
 	credit_account = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "shipping_label_credit_account")
 	debit_account = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "shipping_label_debit_account")
-	frappe.msgprint("fees")
-	frappe.msgprint(fees)
 	je_doc = frappe.new_doc("Journal Entry")
 	je_doc.company = company
 	je_doc.voucher_type = "Journal Entry"
@@ -693,15 +691,16 @@ def get_postal_fees(market_place_order_id):
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
 
-	fees = 0
+	fees = []
+	total_fees = 0
 	for adjustment_event in adjustment_events:
 		if adjustment_event:
 			adjustment_event_list = return_as_list(adjustment_event.AdjustmentEvent)
 			for adjustment in adjustment_event_list:
 				if 'AdjustmentType' in adjustment.keys():
 					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
-						fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
-	return fees
+						total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
+	return fees.append(total_fees)
 
 def get_finances_instance():
 
