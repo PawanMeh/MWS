@@ -691,12 +691,16 @@ def get_postal_fees(market_place_order_id):
 	charges_fees = 0
 
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
-	adjustment_event_list = []
-	adjustment_event_list = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
-	for adjustment_event in adjustment_event_list:
+	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)	
+	charges_fees = 0
+	for adjustment_event in adjustment_events:
 		if adjustment_event:
-			if (adjustment_event.AdjustmentEvent.AdjustmentType == "PostageBilling_Postage" or adjustment_event.AdjustmentEvent.AdjustmentType == "PostageBilling_SignatureConfirmation"):
-				charges_fees += adjustment_event.AdjustmentEvent.AdjustmentAmount.CurrencyAmount
+			adjustment_event_list = return_as_list(adjustment_event.AdjustmentEvent)
+			for adjustment in adjustment_event_list:
+				if 'AdjustmentType' in adjustment.keys():
+					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
+						charges_fees += adjustment_event.AdjustmentEvent.AdjustmentAmount.CurrencyAmount
+
 	frappe.msgprint("postal fees")
 	frappe.msgprint(charges_fees)	
 	return charges_fees
