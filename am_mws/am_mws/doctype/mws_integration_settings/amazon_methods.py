@@ -691,7 +691,7 @@ def get_postal_fees(market_place_order_id):
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
 
-	fees = []
+	fees = [0]
 	total_fees = 0
 	for adjustment_event in adjustment_events:
 		if adjustment_event:
@@ -700,6 +700,7 @@ def get_postal_fees(market_place_order_id):
 				if 'AdjustmentType' in adjustment.keys():
 					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
 						total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
+	fees[0] = total_fees
 	return fees.append(total_fees)
 
 def get_finances_instance():
