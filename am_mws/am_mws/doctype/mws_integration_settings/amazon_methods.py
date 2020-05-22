@@ -702,6 +702,7 @@ def get_postal_fees(market_place_order_id):
 			for adjustment in adjustment_event_list:
 				if 'AdjustmentType' in adjustment.keys():
 					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
+						frappe.msgprint(adjustment.AdjustmentAmount.CurrencyAmount)
 						charges_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
 
 	return charges_fees
