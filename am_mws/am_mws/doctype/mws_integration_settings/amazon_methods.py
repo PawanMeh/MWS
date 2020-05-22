@@ -633,13 +633,21 @@ def get_order_create_label_jv(after_date):
 				where
 					transaction_date >= %s and
 					market_place_order_id IS NOT NULL
-					and market_place_order_id not in (select cheque_no from `tabJournal Entry`)
 				''', (after_date))
 	for order in orders:
-		fees = get_postal_fees(order['market_place_order_id'])
-		#create JV
-		if fees:
-			jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees)
+		je_exists = frappe.db.sql('''
+						select
+							name
+						from
+							`tabJournal Entry`
+						where 
+							cheque_no = %s
+					''', (order['cheque_no']))
+		if not je_exists:
+			fees = get_postal_fees(order['market_place_order_id'])
+			#create JV
+			if fees:
+				jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees)
 
 def create_jv(market_place_order_id, transaction_date, fees):
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
@@ -672,6 +680,7 @@ def create_jv(market_place_order_id, transaction_date, fees):
 	try:
 		if je["cheque_no"]:
 			je_doc.insert(ignore_permissions=True)
+			frappe.msgprint(je_doc.name)
 			return je_doc.name
 	except Exception as e:
 		frappe.log_error(message=e, title="JV Error" + je["cheque_no"] + je["posting_date"])
@@ -688,7 +697,8 @@ def get_postal_fees(market_place_order_id):
 		if adjustment_event:
 			if (adjustment_event.AdjustmentType == "PostageBilling_Postage" or adjustment_event.AdjustmentType == "PostageBilling_SignatureConfirmation"):
 				charges_fees += adjustment_event.AdjustmentAmount.CurrencyAmount
-
+	frappe.msgprint("postal fees")
+	frappe.msgprint(charges_fees)	
 	return charges_fees
 
 def get_finances_instance():
