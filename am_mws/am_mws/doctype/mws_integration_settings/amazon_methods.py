@@ -634,7 +634,7 @@ def get_order_create_label_jv(after_date):
 				where
 					transaction_date >= %s and
 					market_place_order_id IS NOT NULL
-				LIMIT 10
+				LIMIT 20
 				''', (after_date), as_dict=1)
 	for order in orders:
 		je_exists = frappe.db.sql('''
