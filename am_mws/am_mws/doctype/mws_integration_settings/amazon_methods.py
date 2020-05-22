@@ -648,6 +648,7 @@ def get_order_create_label_jv(after_date):
 		if not je_exists:
 			fees_dict = get_postal_fees(order['market_place_order_id'])
 			#create JV
+			frappe.msgprint(fees_dict.get('fees'))
 			if fees_dict.get('fees') > 0:
 				frappe.msgprint("create jv")
 				jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees[0] * -1)
@@ -698,6 +699,7 @@ def get_postal_fees(market_place_order_id):
 				if 'AdjustmentType' in adjustment.keys():
 					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
 						total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
+			frappe.msgprint(total_fees)
 	return {'fees': total_fees}
 
 def get_finances_instance():
