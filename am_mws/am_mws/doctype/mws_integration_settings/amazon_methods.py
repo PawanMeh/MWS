@@ -634,20 +634,11 @@ def get_order_create_label_jv(after_date):
 				where
 					transaction_date >= %s and
 					market_place_order_id IS NOT NULL
+					and market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL) LIMIT 30
 				''', (after_date), as_dict=1)
 	for order in orders:
-		je_exists = frappe.db.sql('''
-						select
-							name
-						from
-							`tabJournal Entry`
-						where 
-							cheque_no = %s
-					''', (order['market_place_order_id']))
-		if not je_exists:
-			fees_dict = get_postal_fees(order['market_place_order_id'])
-			#create JV
-			jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees_dict.get('fees') * -1)
+		fees_dict = get_postal_fees(order['market_place_order_id'])
+		jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees_dict.get('fees') * -1)
 
 def create_jv(market_place_order_id, transaction_date, fees):
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
