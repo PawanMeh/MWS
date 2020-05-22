@@ -634,6 +634,7 @@ def get_order_create_label_jv(after_date):
 				where
 					transaction_date >= %s and
 					market_place_order_id IS NOT NULL
+				LIMIT 10
 				''', (after_date), as_dict=1)
 	for order in orders:
 		je_exists = frappe.db.sql('''
@@ -701,7 +702,7 @@ def get_postal_fees(market_place_order_id):
 				if 'AdjustmentType' in adjustment.keys():
 					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
 						fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
-
+	frappe.errprint(fees)
 	return fees
 
 def get_finances_instance():
