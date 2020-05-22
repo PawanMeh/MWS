@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 import frappe, json, time, datetime, dateutil, math, csv, StringIO
+from frappe.utils import flt
 import amazon_mws as mws
 from frappe import _
 
@@ -699,7 +700,7 @@ def get_postal_fees(market_place_order_id):
 			for adjustment in adjustment_event_list:
 				if 'AdjustmentType' in adjustment.keys():
 					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
-						charges_fees += adjustment.AdjustmentAmount.CurrencyAmount
+						charges_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
 
 	frappe.msgprint("postal fees")
 	frappe.msgprint(charges_fees)	
