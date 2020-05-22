@@ -695,8 +695,8 @@ def get_postal_fees(market_place_order_id):
 	adjustment_event_list = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
 	for adjustment_event in adjustment_event_list:
 		if adjustment_event:
-			if (adjustment_event.AdjustmentType == "PostageBilling_Postage" or adjustment_event.AdjustmentType == "PostageBilling_SignatureConfirmation"):
-				charges_fees += adjustment_event.AdjustmentAmount.CurrencyAmount
+			if (adjustment_event.AdjustmentEvent.AdjustmentType == "PostageBilling_Postage" or adjustment_event.AdjustmentEvent.AdjustmentType == "PostageBilling_SignatureConfirmation"):
+				charges_fees += adjustment_event.AdjustmentEvent.AdjustmentAmount.CurrencyAmount
 	frappe.msgprint("postal fees")
 	frappe.msgprint(charges_fees)	
 	return charges_fees
