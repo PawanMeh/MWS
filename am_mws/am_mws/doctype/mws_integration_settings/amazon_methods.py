@@ -642,7 +642,7 @@ def get_order_create_label_jv(after_date):
 							`tabJournal Entry`
 						where 
 							cheque_no = %s
-					''', (order['cheque_no']))
+					''', (order['market_place_order_id']))
 		if not je_exists:
 			fees = get_postal_fees(order['market_place_order_id'])
 			#create JV
