@@ -699,8 +699,7 @@ def get_postal_fees(market_place_order_id):
 			for adjustment in adjustment_event_list:
 				if 'AdjustmentType' in adjustment.keys():
 					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
-						total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
-	fees[0] = total_fees
+						fees[0] += flt(adjustment.AdjustmentAmount.CurrencyAmount)
 	return fees
 
 def get_finances_instance():
