@@ -648,7 +648,7 @@ def get_order_create_label_jv(after_date):
 		if not je_exists:
 			fees_dict = get_postal_fees(order['market_place_order_id'])
 			#create JV
-			if flt(fees_dict.get('fees')) > 0:
+			if flt(fees_dict.get('fees')) > flt(0):
 				jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees_dict.get('fees') * -1)
 
 def create_jv(market_place_order_id, transaction_date, fees):
