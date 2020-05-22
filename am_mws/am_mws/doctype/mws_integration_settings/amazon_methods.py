@@ -624,6 +624,74 @@ def get_charges_and_fees(market_place_order_id):
 
 	return charges_fees
 
+def get_order_create_label_jv(after_date):	
+	orders = frappe.db.sql('''
+				select
+					name, market_place_order_id, transaction_date
+				from
+					`tabSales Order`
+				where
+					transaction_date >= %s and
+					market_place_order_id IS NOT NULL
+					and market_place_order_id not in (select cheque_no from `tabJournal Entry`)
+				''', (after_date))
+	for order in orders:
+		fees = get_postal_fees(order['market_place_order_id'])
+		#create JV
+		if fees:
+			jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees)
+
+def create_jv(market_place_order_id, transaction_date, fees):
+	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
+	credit_account = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "shipping_label_credit_account")
+	debit_account = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "shipping_label_debit_account")
+
+	je_doc = frappe.new_doc("Journal Entry")
+	je_doc.company = company
+	je_doc.voucher_type = "Journal Entry"
+	je_doc.cheque_no = market_place_order_id
+	je_doc.posting_date = transaction_date
+	je_doc.cheque_date = transaction_date
+	cost_center = "Main - SHM"
+	je_doc.append("accounts", {
+		"account": credit_account,
+		"cost_center": cost_center,
+		"debit_in_account_currency": 0,
+		"debit": 0,
+		"credit_in_account_currency": fees,
+		"credit": fees
+	})
+	je_doc.append("accounts", {
+		"account": debit_account,
+		"cost_center": cost_center,
+		"debit_in_account_currency": fees,
+		"debit": fees,
+		"credit_in_account_currency": 0,
+		"credit": 0
+	})
+	try:
+		if je["cheque_no"]:
+			je_doc.insert(ignore_permissions=True)
+			return je_doc.name
+	except Exception as e:
+		frappe.log_error(message=e, title="JV Error" + je["cheque_no"] + je["posting_date"])
+
+def get_postal_fees(market_place_order_id):
+	finances = get_finances_instance()
+
+	charges_fees = 0
+
+	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
+	adjustment_event_list = []
+	adjustment_event_list = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
+	for adjustment_event in adjustment_event_list:
+		if adjustment_event:
+			if adjustment_event.AdjustmentType == "PostageBilling_Postage" or 
+				adjustment_event.AdjustmentType == "PostageBilling_SignatureConfirmation":
+				charges_fees += adjustment_event.AdjustmentAmount.CurrencyAmount
+
+	return charges_fees
+
 def get_finances_instance():
 
 	mws_settings = frappe.get_doc("MWS Integration Settings")
