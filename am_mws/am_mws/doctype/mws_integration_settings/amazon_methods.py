@@ -656,7 +656,8 @@ def create_jv(market_place_order_id, transaction_date, fees):
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
 	credit_account = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "shipping_label_credit_account")
 	debit_account = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "shipping_label_debit_account")
-
+	frappe.msgprint("fees")
+	frappe.msgprint(fees)
 	je_doc = frappe.new_doc("Journal Entry")
 	je_doc.company = company
 	je_doc.voucher_type = "Journal Entry"
@@ -681,12 +682,11 @@ def create_jv(market_place_order_id, transaction_date, fees):
 		"credit": 0
 	})
 	try:
-		if je["cheque_no"]:
-			je_doc.insert(ignore_permissions=True)
-			frappe.msgprint(je_doc.name)
-			return je_doc.name
+		je_doc.insert(ignore_permissions=True)
+		frappe.msgprint(je_doc.name)
+		return je_doc.name
 	except Exception as e:
-		frappe.log_error(message=e, title="JV Error" + je["cheque_no"] + je["posting_date"])
+		frappe.log_error(message=e, title="JV Error" + je_doc.cheque_no + je_doc.posting_date)
 
 def get_postal_fees(market_place_order_id):
 	finances = get_finances_instance()
