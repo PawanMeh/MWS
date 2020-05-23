@@ -346,6 +346,7 @@ def create_sales_invoice(order_json,after_date):
 	market_place_order_id = order_json.AmazonOrderId
 	fulfillment_channel = order_json.FulfillmentChannel
 	transaction_date = dateutil.parser.parse(order_json.PurchaseDate).strftime("%Y-%m-%d")
+	order_status = order_json.OrderStatus
 
 	si = frappe.db.get_value("Sales Invoice", 
 			filters={"market_place_order_id": market_place_order_id},
@@ -396,7 +397,9 @@ def create_sales_invoice(order_json,after_date):
 									"base_amount":si_doc.outstanding_amount})
 			si_doc.paid_amount = si_doc.outstanding_amount
 			si_doc.save(ignore_permissions=True)
-			
+			if order_status == "Shipped":
+				si_doc.submit()
+
 		except Exception as e:
 			frappe.log_error(message=e, title="Create Sales Invoice" + " for Order ID " + market_place_order_id)
 
