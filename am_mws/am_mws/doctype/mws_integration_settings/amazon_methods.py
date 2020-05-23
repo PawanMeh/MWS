@@ -384,6 +384,9 @@ def create_sales_invoice(order_json,after_date):
 				for fee in charges_and_fees.get("fees"):
 					si_doc.append('taxes', fee)
 
+				for tax in charges_and_fees.get("taxwithheld"):
+					so.append('taxes', tax)
+
 			si_doc.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
 			#payment info
 			si_doc.save(ignore_permissions=True)
