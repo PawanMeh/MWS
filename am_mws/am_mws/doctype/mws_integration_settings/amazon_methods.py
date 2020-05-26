@@ -332,9 +332,14 @@ def create_sales_order(order_json,after_date):
 
 				for tax in charges_and_fees.get("taxwithheld"):
 					so.append('taxes', tax)
+			#validate items
+			total_qty = 0
+			for item in so.get('items'):
+				total_qty += item['qty']
 
-			so.insert(ignore_permissions=True)
-			so.submit()
+			if total_qty > 0:
+				so.insert(ignore_permissions=True)
+				so.submit()
 
 		except Exception as e:
 			frappe.log_error(message=e, title="Create Sales Order")
@@ -387,18 +392,23 @@ def create_sales_invoice(order_json,after_date):
 
 				for tax in charges_and_fees.get("taxwithheld"):
 					si_doc.append('taxes', tax)
+				#validate items
+				total_qty = 0
+				for item in so.get('items'):
+					total_qty += item['qty']
 
-			si_doc.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
-			#payment info
-			si_doc.save(ignore_permissions=True)
-			mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
-			si_doc.append('payments', {"mode_of_payment": mode_of_payment, 
-									"amount": si_doc.outstanding_amount, 
-									"base_amount":si_doc.outstanding_amount})
-			si_doc.paid_amount = si_doc.outstanding_amount
-			si_doc.save(ignore_permissions=True)
-			if order_status == "Shipped":
-				si_doc.submit()
+				if total_qty > 0:
+					si_doc.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
+					#payment info
+					si_doc.save(ignore_permissions=True)
+					mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
+					si_doc.append('payments', {"mode_of_payment": mode_of_payment, 
+											"amount": si_doc.outstanding_amount, 
+											"base_amount":si_doc.outstanding_amount})
+					si_doc.paid_amount = si_doc.outstanding_amount
+					si_doc.save(ignore_permissions=True)
+					if order_status == "Shipped":
+						si_doc.submit()
 
 		except Exception as e:
 			frappe.log_error(message=e, title="Create Sales Invoice" + " for Order ID " + market_place_order_id)
