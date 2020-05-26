@@ -335,7 +335,7 @@ def create_sales_order(order_json,after_date):
 			#validate items
 			total_qty = 0
 			for item in so.items:
-				total_qty += item.qty
+				total_qty += flt(item.qty)
 
 			if total_qty > 0:
 				so.insert(ignore_permissions=True)
@@ -395,7 +395,7 @@ def create_sales_invoice(order_json,after_date):
 				#validate items
 				total_qty = 0
 				for item in si_doc.items:
-					total_qty += item.qty
+					total_qty += flt(item.qty)
 
 				if total_qty > 0:
 					si_doc.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
