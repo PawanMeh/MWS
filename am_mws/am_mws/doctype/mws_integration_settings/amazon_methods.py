@@ -381,6 +381,8 @@ def create_sales_invoice(order_json,after_date):
 				"company": frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
 			})
 
+		if order_status == "Unshipped" and fulfillment_channel == "MFN":
+			si_doc.taxes_and_charges = "Amazon FBM - SHM"
 		try:
 			if taxes_and_charges:
 				charges_and_fees = get_charges_and_fees(market_place_order_id)
