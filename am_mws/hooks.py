@@ -110,7 +110,12 @@ app_license = "MIT"
 scheduler_events = {
 		"hourly": [
 			"am_mws.am_mws.doctype.mws_integration_settings.mws_integration_settings.schedule_get_order_details"
-	]
+	],
+		"cron": {
+			"*/15 * * * *":[
+				"am_mws.am_mws.doctype.mws_integration_settings.mws_integration_settings.submit_mfn_invoices"
+				]
+			}
 }
 # Testing
 # -------

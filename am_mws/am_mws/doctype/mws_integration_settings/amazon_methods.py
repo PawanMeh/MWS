@@ -742,3 +742,23 @@ def get_account(name):
 			frappe.log_error(message=e, title="Create Account")
 
 	return account_name
+
+def auto_submit_mws():
+	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
+	warehouse = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mfn_warehouse")
+	invoices = frappe.db.sql('''
+					select 
+						distinct a.parent
+					from
+						`tabSales Invoice` a, `tabSales Invoice Item` b
+					where
+						a.company = %s and
+						a.name = b.parent and
+						a.docstatus = 0 and
+						b.warehouse = %s and
+						a.market_place_order_id IS NOT NULL
+					''', (company, warehouse))
+
+	for invoice in invoices:
+		si_doc = frappe.get_doc('Sales Invoice', invoice['parent'])
+		si_doc.submit(ignore_permissions=True)

@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 import dateutil
-from amazon_methods import get_products_details, get_orders, get_order_create_invoice, get_order_create_label_jv
+from amazon_methods import get_products_details, get_orders, get_order_create_invoice, get_order_create_label_jv, auto_submit_mws
 
 class MWSIntegrationSettings(Document):
 	def get_products_details(self):
@@ -36,3 +36,8 @@ def schedule_get_order_details():
 
 	if mws_settings.enable_synch and mws_settings.import_label_jv:
 		jvs = get_order_create_label_jv(mws_settings.post_after_date)
+
+def submit_mfn_invoices():
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+	if mws_settings.auto_submit_mfn_invoices:
+		si = auto_submit_mws()
