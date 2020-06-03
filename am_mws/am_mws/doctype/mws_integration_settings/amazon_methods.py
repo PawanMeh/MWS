@@ -760,5 +760,5 @@ def auto_submit_mws():
 					''', (company, warehouse), as_dict=1)
 
 	for invoice in invoices:
-		si_doc = frappe.get_doc('Sales Invoice', invoice['parent'])
+		si_doc = frappe.get_doc('Sales Invoice', invoice['name'])
 		si_doc.submit(ignore_permissions=True)
