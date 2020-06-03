@@ -40,4 +40,4 @@ def schedule_get_order_details():
 def submit_mfn_invoices():
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 	if mws_settings.auto_submit_mfn_invoices:
-		si = auto_submit_mws()
+		auto_submit_mws()
