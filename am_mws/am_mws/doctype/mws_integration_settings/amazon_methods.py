@@ -757,7 +757,7 @@ def auto_submit_mws():
 						a.docstatus = 0 and
 						b.warehouse = %s and
 						a.market_place_order_id IS NOT NULL
-					''', (company, warehouse))
+					''', (company, warehouse), as_dict=1)
 
 	for invoice in invoices:
 		si_doc = frappe.get_doc('Sales Invoice', invoice['parent'])
