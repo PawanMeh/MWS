@@ -400,7 +400,6 @@ def create_sales_invoice(order_json,after_date):
 					total_qty += flt(item.qty)
 
 				if total_qty > 0:
-					si_doc.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
 					#payment info
 					si_doc.save(ignore_permissions=True)
 					mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
@@ -409,7 +408,8 @@ def create_sales_invoice(order_json,after_date):
 											"base_amount":si_doc.outstanding_amount})
 					si_doc.paid_amount = si_doc.outstanding_amount
 					si_doc.save(ignore_permissions=True)
-					if order_status == "Shipped":
+					if order_status == "Shipped" and total_qty > 0:
+						si_doc.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
 						si_doc.submit()
 
 		except Exception as e:
@@ -761,4 +761,5 @@ def auto_submit_mws():
 
 	for invoice in invoices:
 		si_doc = frappe.get_doc('Sales Invoice', invoice['name'])
+		si_doc.update_stock = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "update_stock")
 		si_doc.submit()
