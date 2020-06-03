@@ -748,7 +748,7 @@ def auto_submit_mws():
 	warehouse = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mfn_warehouse")
 	invoices = frappe.db.sql('''
 					select 
-						distinct a.parent
+						distinct a.name
 					from
 						`tabSales Invoice` a, `tabSales Invoice Item` b
 					where
