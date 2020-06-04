@@ -419,7 +419,9 @@ def create_sales_invoice(order_json,after_date):
 						si_doc.submit()
 						si_doc.update_stock_ledger()
 						warehouse_account = get_warehouse_account_map(si_doc.company)
-						update_gl_entries_after(si_doc.posting_date, si_doc.posting_time, si_doc.warehouse, si_doc.items,
+						for item in si_doc.items:
+							warehouse = item.warehouse
+						update_gl_entries_after(si_doc.posting_date, si_doc.posting_time, warehouse, si_doc.items,
 							warehouse_account, company=si_doc.company)
 
 		except Exception as e:
