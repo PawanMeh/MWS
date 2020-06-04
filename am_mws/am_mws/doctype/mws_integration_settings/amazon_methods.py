@@ -10,6 +10,7 @@ from frappe.utils import flt
 import amazon_mws as mws
 from frappe import _
 from erpnext.controllers.stock_controller import update_gl_entries_after
+from erpnext.stock import get_warehouse_account_map
 
 #Get and Create Products
 def get_products_details():
@@ -417,6 +418,9 @@ def create_sales_invoice(order_json,after_date):
 								frappe.throw(_("Insufficient quantity {0} for item {1} in warehouse {2}").format(item.qty, item.item_code, item.warehouse))
 						si_doc.submit()
 						si_doc.update_stock_ledger()
+						warehouse_account = get_warehouse_account_map(si_doc.company)
+						update_gl_entries_after(si_doc.posting_date, si_doc.posting_time, si_doc.warehouse, si_doc.items,
+							warehouse_account, company=si_doc.company)
 
 		except Exception as e:
 			frappe.log_error(message=e, title="Create Sales Invoice" + " for Order ID " + market_place_order_id)
