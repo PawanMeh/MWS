@@ -418,7 +418,6 @@ def create_sales_invoice(order_json,after_date):
 								frappe.throw(_("Insufficient quantity {0} for item {1} in warehouse {2}").format(item.qty, item.item_code, item.warehouse))
 						si_doc.submit()
 						si_doc.update_stock_ledger()
-						warehouse_account = get_warehouse_account_map(si_doc.company)
 						items, warehouses = si_doc.get_items_and_warehouses()
 						update_gl_entries_after(si_doc.posting_date, si_doc.posting_time, warehouses, items, company=si_doc.company)
 
@@ -777,6 +776,8 @@ def auto_submit_mws():
 				frappe.throw(_("Insufficient quantity {0} for item {1} in warehouse {2}").format(item.qty, item.item_code, item.warehouse))
 		si_doc.submit()
 		si_doc.update_stock_ledger()
+		items, warehouses = si_doc.get_items_and_warehouses()
+		update_gl_entries_after(si_doc.posting_date, si_doc.posting_time, warehouses, items, company=si_doc.company)
 
 def stock_balance(warehouse, item_code):
 	stock_bal = frappe.db.sql('''
