@@ -410,8 +410,12 @@ def create_sales_invoice(order_json,after_date):
 					si_doc.paid_amount = si_doc.outstanding_amount
 					si_doc.save(ignore_permissions=True)
 					if order_status == "Shipped" and total_qty > 0:
-						si_doc.submit()
-						si_doc.update_stock_ledger()
+						for item in si_doc.items:
+							stock_qty = stock_balance(item.warehouse, item.item_code)
+							if stock_qty < item.qty:
+								frappe.throw(_("Insufficient quantity {0} for item {1} in warehouse {2}").format(item.qty, item.item_code, item.warehouse))
+						si_doc.docstatus = 1
+						si_doc.save()
 
 		except Exception as e:
 			frappe.log_error(message=e, title="Create Sales Invoice" + " for Order ID " + market_place_order_id)
@@ -762,5 +766,23 @@ def auto_submit_mws():
 
 	for invoice in invoices:
 		si_doc = frappe.get_doc('Sales Invoice', invoice['name'])
-		si_doc.submit()
-		si_doc.update_stock_ledger()
+		for item in si_doc.items:
+			stock_qty = stock_balance(item.warehouse, item.item_code)
+			if stock_qty < item.qty and item.qty > 0:
+				frappe.throw(_("Insufficient quantity {0} for item {1} in warehouse {2}").format(item.qty, item.item_code, item.warehouse))
+		si_doc.docstatus = 1
+		si_doc.save()
+
+def stock_balance(warehouse, item_code):
+	stock_bal = frappe.db.sql('''
+					select
+						actual_qty
+					from
+						`tabBin`
+					where
+						warehouse = %s and
+						item_code = %s''', (warehouse, item_code))
+	if stock_bal:
+		return stock[0][0]
+	else
+		return 0
