@@ -419,10 +419,8 @@ def create_sales_invoice(order_json,after_date):
 						si_doc.submit()
 						si_doc.update_stock_ledger()
 						warehouse_account = get_warehouse_account_map(si_doc.company)
-						for item in si_doc.items:
-							warehouse = item.warehouse
-						update_gl_entries_after(si_doc.posting_date, si_doc.posting_time, warehouse, si_doc.items,
-							warehouse_account, company=si_doc.company)
+						items, warehouses = si_doc.get_items_and_warehouses()
+						update_gl_entries_after(si_doc.posting_date, si_doc.posting_time, warehouses, items, company=si_doc.company)
 
 		except Exception as e:
 			frappe.log_error(message=e, title="Create Sales Invoice" + " for Order ID " + market_place_order_id)
