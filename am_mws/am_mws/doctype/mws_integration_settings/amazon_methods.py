@@ -784,5 +784,5 @@ def stock_balance(warehouse, item_code):
 						item_code = %s''', (warehouse, item_code))
 	if stock_bal:
 		return stock[0][0]
-	else
+	else:
 		return 0
