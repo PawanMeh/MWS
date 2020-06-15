@@ -774,7 +774,7 @@ def auto_submit_mws():
 			if stock_qty < item.qty and item.qty > 0:
 				insufficient_stock = True
 		if insufficient_stock:
-			msg = "Insufficient quantity {0} for item {1} in warehouse {2}".format(item.qty, item.item_code, item.warehouse)
+			msg = "Insufficient quantity {0} for item {1} in warehouse {2} for invoice {3}".format(item.qty, item.item_code, item.warehouse, si_doc.name)
 			frappe.log_error(message = msg, title = "Quantity Error")
 		else:
 			si_doc.submit()
