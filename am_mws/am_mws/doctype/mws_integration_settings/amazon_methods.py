@@ -655,7 +655,7 @@ def get_charges_and_fees(market_place_order_id):
 def get_order_create_label_jv(after_date):	
 	orders = frappe.db.sql('''
 				select
-					name, market_place_order_id, transaction_date
+					name, market_place_order_id, posting_date
 				from
 					`tabSales Invoice`
 				where
@@ -665,7 +665,7 @@ def get_order_create_label_jv(after_date):
 				''', (after_date), as_dict=1)
 	for order in orders:
 		fees_dict = get_postal_fees(order['market_place_order_id'])
-		jv_no = create_jv(order['market_place_order_id'], order['transaction_date'], fees_dict.get('fees') * -1)
+		jv_no = create_jv(order['market_place_order_id'], order['posting_date'], fees_dict.get('fees') * -1)
 
 def create_jv(market_place_order_id, transaction_date, fees):
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
