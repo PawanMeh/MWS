@@ -657,9 +657,9 @@ def get_order_create_label_jv(after_date):
 				select
 					name, market_place_order_id, transaction_date
 				from
-					`tabSales Order`
+					`tabSales Invoice`
 				where
-					transaction_date >= %s and
+					posting_date >= %s and
 					market_place_order_id IS NOT NULL
 					and market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL) LIMIT 30
 				''', (after_date), as_dict=1)
