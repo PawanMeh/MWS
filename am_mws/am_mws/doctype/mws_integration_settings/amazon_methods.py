@@ -761,23 +761,25 @@ def auto_submit_mws():
 					from
 						`tabSales Invoice` a, `tabSales Invoice Item` b
 					where
-						a.company = %s and
-						a.name = b.parent and
-						a.docstatus = 0 and
+						a.company = %s and a.name = b.parent and a.docstatus = 0 and
 						b.warehouse = %s and
 						a.market_place_order_id IS NOT NULL
 					''', (company, warehouse), as_dict=1)
 
 	for invoice in invoices:
 		si_doc = frappe.get_doc('Sales Invoice', invoice['name'])
+		insufficient_stock = False
 		for item in si_doc.items:
 			stock_qty = stock_balance(item.warehouse, item.item_code)
 			if stock_qty < item.qty and item.qty > 0:
-				frappe.throw(_("Insufficient quantity {0} for item {1} in warehouse {2}").format(item.qty, item.item_code, item.warehouse))
-		si_doc.submit()
-		si_doc.update_stock_ledger()
-		items, warehouses = si_doc.get_items_and_warehouses()
-		update_gl_entries_after(si_doc.posting_date, si_doc.posting_time, warehouses, items, company=si_doc.company)
+				insufficient_stock = True
+		if insufficient_stock:
+			frappe.log_error(message = msg, title = "Quantity Error")
+		else:
+			si_doc.submit()
+			si_doc.update_stock_ledger()
+			items, warehouses = si_doc.get_items_and_warehouses()
+			update_gl_entries_after(si_doc.posting_date, si_doc.posting_time, warehouses, items, company=si_doc.company)
 
 def stock_balance(warehouse, item_code):
 	stock_bal = frappe.db.sql('''
