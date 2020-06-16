@@ -661,7 +661,8 @@ def get_order_create_label_jv(after_date):
 				where
 					posting_date >= %s and
 					market_place_order_id IS NOT NULL
-					and market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL) LIMIT 30
+					and market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL) 
+					and grand_total > 0 LIMIT 30
 				''', (after_date), as_dict=1)
 	for order in orders:
 		fees_dict = get_postal_fees(order['market_place_order_id'])
