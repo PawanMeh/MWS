@@ -701,7 +701,7 @@ def create_jv(market_place_order_id, transaction_date, fees):
 		else:
 			return je_doc.name
 	except Exception as e:
-		frappe.log_error(message=e, title="JV Error" + je_doc.cheque_no + je_doc.posting_date)
+		frappe.log_error(message=e, title="JV Error" + je_doc.cheque_no + je_doc.posting_date.strftime('%Y-%m-%d'))
 
 def get_postal_fees(market_place_order_id):
 	finances = get_finances_instance()
