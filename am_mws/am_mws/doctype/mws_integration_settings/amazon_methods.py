@@ -715,7 +715,9 @@ def get_postal_fees(market_place_order_id):
 	fin_events = response.parsed
 	for fin_event in fin_events:
 		total_fees = 0
-		if "AdjustmentEventList" in fin_event:
+		if "AdjustmentEventList/" in fin_event:
+			return {'fees': flt(total_fees)}
+		else:
 			adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
 			for adjustment_event in adjustment_events:
 				if adjustment_event:
@@ -726,8 +728,6 @@ def get_postal_fees(market_place_order_id):
 								total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
 						else:
 							return {'fees': flt(total_fees)}
-		else:
-			return {'fees': flt(total_fees)}
 
 	return {'fees': flt(total_fees)}
 
