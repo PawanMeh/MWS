@@ -705,6 +705,7 @@ def create_jv(market_place_order_id, transaction_date, fees):
 		frappe.log_error(message=e, title="JV Error" + je_doc.cheque_no + je_doc.posting_date.strftime('%Y-%m-%d'))
 
 def get_postal_fees(market_place_order_id):
+	frappe.msgprint(market_place_order_id)
 	finances = get_finances_instance()
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
