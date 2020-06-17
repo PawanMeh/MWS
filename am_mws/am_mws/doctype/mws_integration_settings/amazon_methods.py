@@ -718,6 +718,7 @@ def get_postal_fees(market_place_order_id):
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
 	for adjustment_event in adjustment_events:
+		total_fees = 0
 		if adjustment_event:
 			adjustment_event_list = return_as_list(adjustment_event.AdjustmentEvent)
 			for adjustment in adjustment_event_list:
