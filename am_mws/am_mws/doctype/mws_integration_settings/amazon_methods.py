@@ -665,8 +665,11 @@ def get_order_create_label_jv(after_date):
 					AND naming_series = 'AMZ-' LIMIT 30
 				''', (after_date), as_dict=1)
 	for order in orders:
-		fees_dict = get_postal_fees(order['market_place_order_id'])
-		jv_no = create_jv(order['market_place_order_id'], order['posting_date'], fees_dict.get('fees') * -1)
+		order_id = order['market_place_order_id']
+		if order_id.endswith('-refund'):
+			order_id = order_id[:7]
+		fees_dict = get_postal_fees(order_id)
+		jv_no = create_jv(order_id, order['posting_date'], fees_dict.get('fees') * -1)
 
 def create_jv(market_place_order_id, transaction_date, fees):
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
