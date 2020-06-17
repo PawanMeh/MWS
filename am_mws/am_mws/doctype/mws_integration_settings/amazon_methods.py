@@ -662,7 +662,7 @@ def get_order_create_label_jv(after_date):
 					posting_date >= %s and
 					market_place_order_id IS NOT NULL
 					and market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL)
-					AND name like 'AMZ%' LIMIT 30
+					AND naming_series = 'AMZ-' LIMIT 30
 				''', (after_date), as_dict=1)
 	for order in orders:
 		fees_dict = get_postal_fees(order['market_place_order_id'])
@@ -765,7 +765,7 @@ def auto_submit_mws():
 						a.company = %s and a.name = b.parent and a.docstatus = 0 and
 						b.warehouse = %s and
 						a.market_place_order_id IS NOT NULL and
-						a.name like 'AMZ%'
+						a.naming_series = 'AMZ-'
 					''', (company, warehouse), as_dict=1)
 
 	for invoice in invoices:
