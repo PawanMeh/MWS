@@ -712,9 +712,9 @@ def create_jv(market_place_order_id, transaction_date, fees):
 def get_postal_fees(market_place_order_id):
 	finances = get_finances_instance()
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
-	fin_events = return_as_list(response.parsed.FinancialEvents)
+	fin_events = response.parsed
 	for fin_event in fin_events:
-		if 'AdjustmentEventList' in fin_event.keys():
+		if "AdjustmentEventList" in fin_event:
 			adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
 			total_fees = 0
 			for adjustment_event in adjustment_events:
@@ -726,6 +726,8 @@ def get_postal_fees(market_place_order_id):
 								total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
 						else:
 							return {'fees': flt(total_fees)}
+		else:
+			return {'fees': flt(total_fees)}
 
 	return {'fees': flt(total_fees)}
 
