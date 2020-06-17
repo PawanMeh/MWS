@@ -661,8 +661,8 @@ def get_order_create_label_jv(after_date):
 				where
 					posting_date >= %s and
 					market_place_order_id IS NOT NULL
-					and market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL) 
-					and grand_total > 0 LIMIT 30
+					and market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL)
+					AND name like 'AMZ%' LIMIT 30
 				''', (after_date), as_dict=1)
 	for order in orders:
 		fees_dict = get_postal_fees(order['market_place_order_id'])
@@ -705,7 +705,6 @@ def create_jv(market_place_order_id, transaction_date, fees):
 		frappe.log_error(message=e, title="JV Error" + je_doc.cheque_no + je_doc.posting_date.strftime('%Y-%m-%d'))
 
 def get_postal_fees(market_place_order_id):
-	frappe.msgprint(market_place_order_id)
 	finances = get_finances_instance()
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
@@ -765,7 +764,8 @@ def auto_submit_mws():
 					where
 						a.company = %s and a.name = b.parent and a.docstatus = 0 and
 						b.warehouse = %s and
-						a.market_place_order_id IS NOT NULL
+						a.market_place_order_id IS NOT NULL and
+						a.name like 'AMZ%'
 					''', (company, warehouse), as_dict=1)
 
 	for invoice in invoices:
