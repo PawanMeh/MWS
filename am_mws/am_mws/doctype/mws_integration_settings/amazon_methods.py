@@ -73,6 +73,7 @@ def get_reports_instance():
 
 #amazon list format, list method does not work in integration
 def return_as_list(input_value):
+	frappe.msgprint(input_value)
 	if type(input_value) == list:
 		return input_value
 	else:
@@ -713,7 +714,6 @@ def get_postal_fees(market_place_order_id):
 	finances = get_finances_instance()
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
-	frappe.msgprint(adjustment_events)
 	total_fees = 0
 	for adjustment_event in adjustment_events:
 		if adjustment_event:
