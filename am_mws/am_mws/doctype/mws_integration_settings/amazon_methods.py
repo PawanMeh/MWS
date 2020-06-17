@@ -712,7 +712,6 @@ def create_jv(market_place_order_id, transaction_date, fees):
 def get_postal_fees(market_place_order_id):
 	finances = get_finances_instance()
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
-	frappe.msgprint(response)
 	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
 	frappe.msgprint(adjustment_events)
 	total_fees = 0
