@@ -662,7 +662,7 @@ def get_order_create_label_jv(after_date):
 					posting_date >= %s and
 					market_place_order_id IS NOT NULL
 					and market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL)
-					AND naming_series = 'AMZ-' LIMIT 100
+					AND naming_series = 'AMZ-' LIMIT 50
 				''', (after_date), as_dict=1)
 	for order in orders:
 		order_id = order['market_place_order_id']
@@ -671,7 +671,7 @@ def get_order_create_label_jv(after_date):
 		elif order_id.endswith('-1'):
 			order_id = order_id[:2]
 		fees_dict = get_postal_fees(order_id)
-		jv_no = create_jv(order_id, order['posting_date'], fees_dict.get('fees') * -1)
+		jv_no = create_jv(order['market_place_order_id'], order['posting_date'], fees_dict.get('fees') * -1)
 
 def create_jv(market_place_order_id, transaction_date, fees):
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
