@@ -73,7 +73,6 @@ def get_reports_instance():
 
 #amazon list format, list method does not work in integration
 def return_as_list(input_value):
-	frappe.msgprint(input_value)
 	if type(input_value) == list:
 		return input_value
 	else:
@@ -713,17 +712,20 @@ def create_jv(market_place_order_id, transaction_date, fees):
 def get_postal_fees(market_place_order_id):
 	finances = get_finances_instance()
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
-	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
-	total_fees = 0
-	for adjustment_event in adjustment_events:
-		if adjustment_event:
-			adjustment_event_list = return_as_list(adjustment_event.AdjustmentEvent)
-			for adjustment in adjustment_event_list:
-				if 'AdjustmentType' in adjustment.keys():
-					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
-						total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
-				else:
-					return {'fees': flt(total_fees)}
+	fin_events = return_as_list(response.parsed.FinancialEvents)
+	for fin_event in fin_events:
+		if 'AdjustmentEventList' in fin_event.keys():
+			adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
+			total_fees = 0
+			for adjustment_event in adjustment_events:
+				if adjustment_event:
+					adjustment_event_list = return_as_list(adjustment_event.AdjustmentEvent)
+					for adjustment in adjustment_event_list:
+						if 'AdjustmentType' in adjustment.keys():
+							if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
+								total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
+						else:
+							return {'fees': flt(total_fees)}
 
 	return {'fees': flt(total_fees)}
 
