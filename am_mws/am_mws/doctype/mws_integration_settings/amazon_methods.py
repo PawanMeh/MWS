@@ -715,13 +715,14 @@ def get_postal_fees(market_place_order_id):
 	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
 
 	total_fees = 0
-	for adjustment_event in adjustment_events:
-		if adjustment_event:
-			adjustment_event_list = return_as_list(adjustment_event.AdjustmentEvent)
-			for adjustment in adjustment_event_list:
-				if 'AdjustmentType' in adjustment.keys():
-					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
-						total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
+	if adjustment_events:
+		for adjustment_event in adjustment_events:
+			if adjustment_event:
+				adjustment_event_list = return_as_list(adjustment_event.AdjustmentEvent)
+				for adjustment in adjustment_event_list:
+					if 'AdjustmentType' in adjustment.keys():
+						if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
+							total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
 
 	return {'fees': flt(total_fees)}
 
