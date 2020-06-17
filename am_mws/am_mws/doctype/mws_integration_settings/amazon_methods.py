@@ -662,7 +662,7 @@ def get_order_create_label_jv(after_date):
 					posting_date >= %s and
 					market_place_order_id IS NOT NULL
 					and market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL)
-					AND naming_series = 'AMZ-' LIMIT 30
+					AND naming_series = 'AMZ-' LIMIT 100
 				''', (after_date), as_dict=1)
 	for order in orders:
 		order_id = order['market_place_order_id']
