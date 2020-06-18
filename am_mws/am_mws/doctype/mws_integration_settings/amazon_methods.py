@@ -658,16 +658,14 @@ def get_order_create_label_jv(after_date):
 				select
 					a.name, a.market_place_order_id, a.posting_date
 				from
-					`tabSales Invoice` a, `tabSales Invoice Item` b
+					`tabSales Invoice` a
 				where
-					a.name = b.parent and
 					a.docstatus = 1 and
-					b.warehouse = %s and
 					a.posting_date >= %s and
 					a.market_place_order_id IS NOT NULL
 					and a.market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL)
 					AND a.naming_series = 'AMZ-' LIMIT 50
-				''', (warehouse, after_date), as_dict=1)
+				''', (after_date), as_dict=1)
 	for order in orders:
 		order_id = order['market_place_order_id']
 		if order_id.endswith('-refund'):
@@ -717,16 +715,17 @@ def get_postal_fees(market_place_order_id):
 	finances = get_finances_instance()
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 	adjustment_events = return_as_list(response.parsed.FinancialEvents.AdjustmentEventList)
-	for adjustment_event in adjustment_events:
-		total_fees = 0
-		if adjustment_event:
-			adjustment_event_list = return_as_list(adjustment_event.AdjustmentEvent)
-			for adjustment in adjustment_event_list:
-				if 'AdjustmentType' in adjustment.keys():
-					if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
-						total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
-				else:
-					return {'fees': flt(total_fees)}
+	if len(adjustment_events) > 0:
+		for adjustment_event in adjustment_events:
+			total_fees = 0
+			if adjustment_event:
+				adjustment_event_list = return_as_list(adjustment_event.AdjustmentEvent)
+				for adjustment in adjustment_event_list:
+					if 'AdjustmentType' in adjustment.keys():
+						if (adjustment.AdjustmentType == "PostageBilling_Postage" or adjustment.AdjustmentType == "PostageBilling_SignatureConfirmation"):
+							total_fees += flt(adjustment.AdjustmentAmount.CurrencyAmount)
+					else:
+						return {'fees': flt(total_fees)}
 							
 	return {'fees': flt(total_fees)}
 
