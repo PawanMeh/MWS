@@ -662,11 +662,12 @@ def get_order_create_label_jv(after_date):
 				where
 					a.name = b.parent and
 					a.docstatus = 1 and
+					b.warehouse = %s and
 					a.posting_date >= %s and
 					a.market_place_order_id IS NOT NULL
 					and a.market_place_order_id not in (select cheque_no from `tabJournal Entry` where cheque_no IS NOT NULL)
 					AND a.naming_series = 'AMZ-' LIMIT 50
-				''', (after_date), as_dict=1)
+				''', (warehouse, after_date), as_dict=1)
 	for order in orders:
 		order_id = order['market_place_order_id']
 		if order_id.endswith('-refund'):
