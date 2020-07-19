@@ -640,3 +640,19 @@ class Finances(MWS):
 					MaxResultsPerPage=max_results,
 					)
 		return self.make_request(data)
+
+class Fulfilment(MWS):
+	""" Amazon Fulfilment API"""
+	URI = '/Fulfilment/2010-10-01'
+	VERSION = '2010-10-01'
+	NS = "{https://mws.amazonservices.com/Fulfilment/2010-10-01}"
+
+	def list_inbound_shipments(self , posted_after=None, posted_before=None,
+		 					max_results='100'):
+
+		data = dict(Action='ListInboundShipments',
+					PostedAfter=posted_after,
+					PostedBefore=posted_before,
+					MaxResultsPerPage=max_results,
+					)
+		return self.make_request(data)

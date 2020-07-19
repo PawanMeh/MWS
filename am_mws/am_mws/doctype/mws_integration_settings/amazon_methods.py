@@ -745,6 +745,28 @@ def get_finances_instance():
 
 	return finances
 
+def get_shipments_instance():
+
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+
+	shipments = mws.Fulfilment(
+			account_id = mws_settings.seller_id,
+			access_key = mws_settings.aws_access_key_id,
+			secret_key = mws_settings.secret_key,
+			region= mws_settings.region,
+			domain= mws_settings.domain,
+			version="2010-10-01"
+		)
+
+	return shipments
+
+def get_shipments_details():
+	shipments = get_shipments_instance()
+	response = call_mws_method(shipments.ListInboundShipmentsResult)
+	shipment_events = return_as_list(response.parsed.ShipmentData)
+	for shipment in shipment_events:
+		frappe.msgprint(shipment)
+
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})
 	account_name = existing_account
