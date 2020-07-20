@@ -648,12 +648,13 @@ class Fulfilment(MWS):
 	VERSION = '2010-10-01'
 	NS = "{https://mws.amazonservices.com/FulfillmentInboundShipment/2010-10-01}"
 
-	def list_inbound_shipments(self , posted_after=None, posted_before=None,
-		 					max_results='100'):
+	def list_inbound_shipments(self , posted_after=None, posted_before=None, statuses = (),
+							max_results='100'):
 
 		data = dict(Action='ListInboundShipments',
 					PostedAfter=posted_after,
 					PostedBefore=posted_before,
 					MaxResultsPerPage=max_results,
 					)
+		data.update(self.enumerate_param('ShipmentStatusList.member.', statuses))
 		return self.make_request(data)
