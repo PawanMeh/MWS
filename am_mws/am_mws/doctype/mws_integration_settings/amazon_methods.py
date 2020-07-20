@@ -755,7 +755,7 @@ def get_shipments_instance():
 			secret_key = mws_settings.secret_key,
 			region= mws_settings.region,
 			domain= mws_settings.domain,
-			version="2015-05-01"
+			version="2010-10-01"
 		)
 
 	return shipments
