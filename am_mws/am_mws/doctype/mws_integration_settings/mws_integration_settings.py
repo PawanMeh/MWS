@@ -24,7 +24,7 @@ class MWSIntegrationSettings(Document):
 		jvs = get_order_create_label_jv(self.post_after_date)
 
 	def get_shipments(self):
-		shipments = get_shipments_details()
+		shipments = get_shipments_details(self.after_date, self.before_date)
 
 def schedule_get_order_details():
 	mws_settings = frappe.get_doc("MWS Integration Settings")

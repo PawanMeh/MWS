@@ -760,10 +760,9 @@ def get_shipments_instance():
 
 	return shipments
 
-def get_shipments_details():
+def get_shipments_details(after_date, before_date):
 	shipments = get_shipments_instance()
-	frappe.msgprint(shipment)
-	response = call_mws_method(shipments.ShipmentData)
+	response = call_mws_method(shipments.list_inbound_shipments, posted_after=after_date, posted_before=before_date)
 	shipment_events = return_as_list(response.parsed.member)
 	for shipment in shipment_events:
 		frappe.msgprint(shipment)
