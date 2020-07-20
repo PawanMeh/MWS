@@ -644,9 +644,9 @@ class Finances(MWS):
 
 class Fulfilment(MWS):
 	""" Amazon Fulfilment API"""
-	URI = '/Fulfilment/2010-10-01'
-	VERSION = '2010-10-01'
-	NS = "{https://mws.amazonservices.com/Fulfilment/2010-10-01}"
+	URI = '/Fulfilment/2015-05-01'
+	VERSION = '2015-05-01'
+	NS = "{https://mws.amazonservices.com/Fulfilment/2015-05-01}"
 
 	def list_inbound_shipments(self , posted_after=None, posted_before=None,
 		 					max_results='100'):
