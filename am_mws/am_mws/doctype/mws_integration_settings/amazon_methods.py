@@ -768,7 +768,14 @@ def get_shipments_details(after_date, before_date):
 	for shipment in shipment_events:
 		shipment_list = return_as_list(shipment.member)
 		for member in shipment_list:
-			frappe.msgprint(member.ShipmentId)
+			frm_wh = get_warehouse(member.ShipFromAddress.PostalCode)
+			shipment_id = member.ShipmentId
+			if len(frm_wh) != 0:
+				response = call_mws_method(shipments.list_shipment_details, shipment_id=shipment_id)
+				item_details = return_as_list(response.parsed.ListInboundShipmentItemsResult.ItemData)
+				for item in item_details:
+					frappe.msgprint(item.SellerSKU)
+			#get item code from 
 
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})
@@ -787,6 +794,19 @@ def get_account(name):
 			frappe.log_error(message=e, title="Create Account")
 
 	return account_name
+
+def get_warehouse(pin_code):
+	frm_wh = frappe.db.sql('''
+				select
+					select 
+						b.link_name 
+					from 
+						`tabAddress` a, `tabDynamic Link` b 
+					where a.name = b.parent and b.parenttype = 'Address' 
+					and b.link_doctype = 'Warehouse' and a.pincode = %s
+				''',(pin_code), as_list=1)
+	if frm_wh:
+		return[frm_wh[0][0]]
 
 def auto_submit_mws():
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")

@@ -658,3 +658,11 @@ class Fulfilment(MWS):
 					)
 		data.update(self.enumerate_param('ShipmentStatusList.member.', statuses))
 		return self.make_request(data)
+
+	def list_shipment_details(self , shipment_id=None, max_results='100'):
+
+		data = dict(Action='ListInboundShipmentItems',
+					ShipmentId=shipment_id,
+					MaxResultsPerPage=max_results,
+					)
+		return self.make_request(data)
