@@ -798,12 +798,14 @@ def get_account(name):
 def get_warehouse(pin_code):
 	frm_wh = frappe.db.sql('''
 				select
-					select 
-						b.link_name 
-					from 
-						`tabAddress` a, `tabDynamic Link` b 
-					where a.name = b.parent and b.parenttype = 'Address' 
-					and b.link_doctype = 'Warehouse' and a.pincode = %s
+					b.link_name 
+				from 
+					`tabAddress` a, `tabDynamic Link` b 
+				where
+					a.name = b.parent and 
+					b.parenttype = 'Address' and 
+					b.link_doctype = 'Warehouse' and 
+					a.pincode = %s
 				''',(pin_code), as_list=1)
 	if frm_wh:
 		return[frm_wh[0][0]]
