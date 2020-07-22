@@ -770,12 +770,14 @@ def get_shipments_details(after_date, before_date):
 		for member in shipment_list:
 			frm_wh = get_warehouse(member.ShipFromAddress.PostalCode)
 			shipment_id = member.ShipmentId
-			if len(frm_wh) != 0:
+			if frm_wh:
 				response = call_mws_method(shipments.list_shipment_details, shipment_id=shipment_id)
-				item_details = return_as_list(response.parsed.ListInboundShipmentItemsResult.ItemData)
+				item_details = return_as_list(response.parsed.ItemData)
+				frappe.msgprint(frm_wh)
 				for item in item_details:
-					frappe.msgprint(item.SellerSKU)
-			#get item code from 
+					item_list = return_as_list(item.member)
+					for item_member in item_list:
+						frappe.msgprint(item_member.SellerSKU)
 
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})
