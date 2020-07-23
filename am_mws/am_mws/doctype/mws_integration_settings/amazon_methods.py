@@ -788,11 +788,11 @@ def get_shipments_details(after_date, before_date):
 					item_list = return_as_list(item.member)
 					for item_member in item_list:
 						se_args['items'].append({
-							{'s_warehouse': frm_wh,
+							's_warehouse': frm_wh,
 							't_warehouse': 'Work In Progress - OE',
 							'item_code': item_member.SellerSKU,
 							'qty': item_member.QuantityShipped,
-							'uom': 'Unit'}
+							'uom': 'Unit'
 						})
 				response = call_mws_method(shipments.list_transport_details, shipment_id=shipment_id)
 				transport_details = return_as_list(response.parsed.TransportContent)
@@ -807,8 +807,8 @@ def get_shipments_details(after_date, before_date):
 					tdetails = return_as_list(detail.TransportDetails)
 					for td in tdetails:
 						se_args['additional_costs'].append({
-							{'description': ship_type_descr,
-							'amount': td.PartneredSmallParcelData.PartneredEstimate.Amount.Value}
+							'description': ship_type_descr,
+							'amount': td.PartneredSmallParcelData.PartneredEstimate.Amount.Value
 						})
 			create_stock_entry(se_args)
 
