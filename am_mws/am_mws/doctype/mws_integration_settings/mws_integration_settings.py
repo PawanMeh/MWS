@@ -24,8 +24,8 @@ class MWSIntegrationSettings(Document):
 		jvs = get_order_create_label_jv(self.post_after_date)
 
 	def get_shipments(self):
-		after_date = dateutil.parser.parse(self.after_date).strftime("%Y-%m-%d")
-		before_date = dateutil.parser.parse(self.before_date).strftime("%Y-%m-%d")
+		after_date = dateutil.parser.parse(self.fulfil_after_date).strftime("%Y-%m-%d")
+		before_date = dateutil.parser.parse(self.fulfil_before_date).strftime("%Y-%m-%d")
 		shipments = get_shipments_details(after_date, before_date)
 
 def schedule_get_order_details():

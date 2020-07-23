@@ -775,7 +775,7 @@ def get_shipments_details(after_date, before_date):
 			se_args = {
 				"company" : mws_settings.company,
 				"naming_series" : "MAT-STE-.YYYY.-",
-				"stock_entry_type" : "Material Transfer",
+				"purpose" : "Material Transfer",
 				"shipment_id" : shipment_id,
 				"posting_date" : today(),
 				"items" : [],
@@ -789,7 +789,7 @@ def get_shipments_details(after_date, before_date):
 					for item_member in item_list:
 						se_args['items'].append({
 							's_warehouse': frm_wh,
-							't_warehouse': 'Work In Progress - OE',
+							't_warehouse': mws_settings.target_warehouse,
 							'item_code': item_member.SellerSKU,
 							'qty': item_member.QuantityShipped,
 							'uom': 'Unit'
@@ -846,11 +846,12 @@ def get_warehouse(pin_code):
 		return frm_wh[0][0]
 
 def create_stock_entry(args):
+	mws_settings = frappe.get_doc("MWS Integration Settings")
 	args = frappe._dict(args)
 	se = frappe.get_doc({
 		"doctype": "Stock Entry",
 		"naming_series": args.naming_series,
-		"stock_entry_type":args.stock_entry_type,
+		"purpose":args.purpose,
 		"shipment_id": args.shipment_id,
 		"posting_date": today(),
 		"items": args["items"],
@@ -860,6 +861,8 @@ def create_stock_entry(args):
 	try:
 		se.set_missing_values()
 		se.insert(ignore_mandatory=True)
+		if mws_settings.submit_stock_entry:
+			se.submit()
 
 	except Exception as e:
 		frappe.log_error(message=e,
