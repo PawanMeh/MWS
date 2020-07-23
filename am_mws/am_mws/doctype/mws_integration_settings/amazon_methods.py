@@ -860,7 +860,7 @@ def create_stock_entry(args):
 
 	try:
 		if frappe.db.exists({'doctype': 'Stock Entry','shipment_id': args.shipment_id}):
-			frappe.log_error(message=e, title="Create Stock Entry: " + args.get("shipment_id") + "already exists")
+			frappe.log_error(title="Create Stock Entry: " + args.get("shipment_id") + "already exists")
 		else:
 			se.set_missing_values()
 			se.insert(ignore_mandatory=True)
