@@ -843,7 +843,7 @@ def get_warehouse(pin_code):
 					a.pincode = %s
 				''',(pin_code), as_list=1)
 	if frm_wh:
-		return[frm_wh[0][0]]
+		return frm_wh[0][0]
 
 def create_stock_entry(args):
 	args = frappe._dict(args)
