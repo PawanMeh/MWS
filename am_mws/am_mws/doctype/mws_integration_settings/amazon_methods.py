@@ -787,7 +787,7 @@ def get_shipments_details(after_date, before_date):
 				for item in item_details:
 					item_list = return_as_list(item.member)
 					for item_member in item_list:
-						se_args.items.append({
+						se_args['items'].append({
 							{'s_warehouse': frm_wh,
 							't_warehouse': 'Work In Progress - OE',
 							'item_code': item_member.SellerSKU,
@@ -806,7 +806,7 @@ def get_shipments_details(after_date, before_date):
 						ship_type_descr = "Full Truckload"
 					tdetails = return_as_list(detail.TransportDetails)
 					for td in tdetails:
-						se_args.additional_costs.append({
+						se_args['additional_costs'].append({
 							{'description': ship_type_descr,
 							'amount': td.PartneredSmallParcelData.PartneredEstimate.Amount.Value}
 						})
