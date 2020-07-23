@@ -773,11 +773,11 @@ def get_shipments_details(after_date, before_date):
 			frm_wh = get_warehouse(member.ShipFromAddress.PostalCode)
 			shipment_id = member.ShipmentId
 			se_args = {
-				"company" = mws_settings.company,
-				"naming_series" = "MAT-STE-.YYYY.-",
-				"stock_entry_type" = "Material Transfer",
-				"shipment_id" = shipment_id,
-				"posting_date" = today(),
+				"company" : mws_settings.company,
+				"naming_series" : "MAT-STE-.YYYY.-",
+				"stock_entry_type" : "Material Transfer",
+				"shipment_id" : shipment_id,
+				"posting_date" : today(),
 				"items" = [],
 				"additional_costs" = []
 			}
