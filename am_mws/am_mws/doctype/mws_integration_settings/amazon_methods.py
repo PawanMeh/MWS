@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 import frappe, json, time, datetime, dateutil, math, csv, StringIO
-from frappe.utils import flt
+from frappe.utils import flt, today
 import amazon_mws as mws
 from frappe import _
 from erpnext.controllers.stock_controller import update_gl_entries_after
@@ -761,6 +761,8 @@ def get_shipments_instance():
 	return shipments
 
 def get_shipments_details(after_date, before_date):
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+	
 	shipments = get_shipments_instance()
 	status_list = ["WORKING","SHIPPED","RECEIVING","IN_TRANSIT","DELIVERED","CHECKED_IN","CLOSED"]
 	response = call_mws_method(shipments.list_inbound_shipments, posted_after=after_date, posted_before=before_date, statuses = status_list)
@@ -770,21 +772,47 @@ def get_shipments_details(after_date, before_date):
 		for member in shipment_list:
 			frm_wh = get_warehouse(member.ShipFromAddress.PostalCode)
 			shipment_id = member.ShipmentId
+			se_args = {
+				"company" = mws_settings.company,
+				"naming_series" = "MAT-STE-.YYYY.-",
+				"stock_entry_type" = "Material Transfer",
+				"shipment_id" = shipment_id,
+				"posting_date" = today(),
+				"items" = [],
+				"additional_costs" = []
+			}
 			if frm_wh:
 				response = call_mws_method(shipments.list_shipment_details, shipment_id=shipment_id)
 				item_details = return_as_list(response.parsed.ItemData)
 				for item in item_details:
 					item_list = return_as_list(item.member)
 					for item_member in item_list:
-						frappe.msgprint(item_member.SellerSKU)
-						#creat se
+						se_args.items.append({
+							{'s_warehouse': frm_wh,
+							't_warehouse': 'Work In Progress - OE',
+							'item_code': item_member.SellerSKU,
+							'qty': item_member.QuantityShipped,
+							'uom': 'Unit'}
+						})
 				response = call_mws_method(shipments.list_transport_details, shipment_id=shipment_id)
 				transport_details = return_as_list(response.parsed.TransportContent)
 				for detail in transport_details:
-					frappe.msgprint(detail.TransportHeader.ShipmentType)
+					ship_type_descr = ""
+					if detail.TransportHeader.ShipmentType = "SP":
+						ship_type_descr = "Small Parcel"
+					elif detail.TransportHeader.ShipmentType = "LTL":
+						ship_type_descr = "Less Than Truckload"
+					elif detail.TransportHeader.ShipmentType = "FTL":
+						ship_type_descr = "Full Truckload"
 					tdetails = return_as_list(detail.TransportDetails)
 					for td in tdetails:
-						frappe.msgprint(td.PartneredSmallParcelData.PartneredEstimate.Amount.Value)
+						#transport details
+						if ShipmentType
+						se_args.additional_costs.append({
+							{'description': ship_type_descr,
+							'amount': td.PartneredSmallParcelData.PartneredEstimate.Amount.Value}
+						})
+			create_stock_entry(se_args)
 
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})
@@ -818,6 +846,27 @@ def get_warehouse(pin_code):
 				''',(pin_code), as_list=1)
 	if frm_wh:
 		return[frm_wh[0][0]]
+
+def create_stock_entry(args):
+	args = frappe._dict(args)
+	se = frappe.get_doc({
+		"doctype": "Stock Entry",
+		"naming_series": args.naming_series,
+		"stock_entry_type":args.stock_entry_type,
+		"shipment_id": args.shipment_id,
+		"posting_date": today(),
+		"items": args["items"],
+		"additional_costs": args["additional_costs"]
+	})
+
+	try:
+		se.set_missing_values()
+		se.insert(ignore_mandatory=True)
+
+	except Exception as e:
+		frappe.log_error(message=e,
+			title="Create Stock Entry: " + args.get("shipment_id"))
+		return None
 
 def auto_submit_mws():
 	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
