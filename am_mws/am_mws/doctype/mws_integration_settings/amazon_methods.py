@@ -773,11 +773,18 @@ def get_shipments_details(after_date, before_date):
 			if frm_wh:
 				response = call_mws_method(shipments.list_shipment_details, shipment_id=shipment_id)
 				item_details = return_as_list(response.parsed.ItemData)
-				frappe.msgprint(frm_wh)
 				for item in item_details:
 					item_list = return_as_list(item.member)
 					for item_member in item_list:
 						frappe.msgprint(item_member.SellerSKU)
+						#creat se
+				response = call_mws_method(shipments.list_transport_details, shipment_id=shipment_id)
+				transport_details = return_as_list(response.parsed.TransportContent)
+				for detail in transport_details:
+					frappe.msgprint(detail.TransportHeader.ShipmentType)
+					tdetails = return_as_list(detail.TransportDetails)
+					for td in tdetails:
+						frappe.msgprint(td.PartneredSmallParcelData.PartneredEstimate.Amount.Value)
 
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})

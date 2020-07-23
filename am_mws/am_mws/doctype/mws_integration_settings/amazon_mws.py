@@ -666,3 +666,11 @@ class Fulfilment(MWS):
 					MaxResultsPerPage=max_results,
 					)
 		return self.make_request(data)
+
+	def list_transport_details(self , shipment_id=None, max_results='100'):
+
+		data = dict(Action='GetTransportContent',
+					ShipmentId=shipment_id,
+					MaxResultsPerPage=max_results,
+					)
+		return self.make_request(data)
