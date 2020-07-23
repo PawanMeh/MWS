@@ -798,11 +798,11 @@ def get_shipments_details(after_date, before_date):
 				transport_details = return_as_list(response.parsed.TransportContent)
 				for detail in transport_details:
 					ship_type_descr = ""
-					if detail.TransportHeader.ShipmentType = "SP":
+					if detail.TransportHeader.ShipmentType == "SP":
 						ship_type_descr = "Small Parcel"
-					elif detail.TransportHeader.ShipmentType = "LTL":
+					elif detail.TransportHeader.ShipmentType == "LTL":
 						ship_type_descr = "Less Than Truckload"
-					elif detail.TransportHeader.ShipmentType = "FTL":
+					elif detail.TransportHeader.ShipmentType == "FTL":
 						ship_type_descr = "Full Truckload"
 					tdetails = return_as_list(detail.TransportDetails)
 					for td in tdetails:
