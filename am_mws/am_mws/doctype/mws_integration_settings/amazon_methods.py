@@ -778,8 +778,8 @@ def get_shipments_details(after_date, before_date):
 				"stock_entry_type" : "Material Transfer",
 				"shipment_id" : shipment_id,
 				"posting_date" : today(),
-				"items" = [],
-				"additional_costs" = []
+				"items" : [],
+				"additional_costs" : []
 			}
 			if frm_wh:
 				response = call_mws_method(shipments.list_shipment_details, shipment_id=shipment_id)
