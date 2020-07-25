@@ -652,8 +652,8 @@ class Fulfilment(MWS):
 							max_results='100'):
 
 		data = dict(Action='ListInboundShipments',
-					PostedAfter=posted_after,
-					PostedBefore=posted_before,
+					LastUpdatedAfter=posted_after,
+					LastUpdatedBefore=posted_before,
 					MaxResultsPerPage=max_results,
 					)
 		data.update(self.enumerate_param('ShipmentStatusList.member.', statuses))
