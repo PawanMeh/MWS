@@ -818,7 +818,7 @@ def get_shipments_details(after_date, before_date):
 							parcel_details = return_as_list(td.PartneredSmallParcelData)
 							amount = 0
 							for d in parcel_details:
-								amount += d.PartneredEstimate.Amount.Value
+								amount += flt(d.PartneredEstimate.Amount.Value)
 							se_args['additional_costs'].append({
 								'description': ship_type_descr,
 								'amount': amount
