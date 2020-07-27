@@ -813,10 +813,11 @@ def get_shipments_details(after_date, before_date):
 						ship_type_descr = "Full Truckload"
 					tdetails = return_as_list(detail.TransportDetails)
 					for td in tdetails:
-						se_args['additional_costs'].append({
-							'description': ship_type_descr,
-							'amount': td.PartneredSmallParcelData.PartneredEstimate.Amount.Value
-						})
+						if 'PartneredSmallParcelData' in td.keys():
+							se_args['additional_costs'].append({
+								'description': ship_type_descr,
+								'amount': td.PartneredSmallParcelData.PartneredEstimate.Amount.Value
+							})
 				create_stock_entry(se_args)
 			else:
 				frappe.msgprint("No Warehouse found for pin code {0} for Shipment ID {1}".format(pin_code, shipment_id))
