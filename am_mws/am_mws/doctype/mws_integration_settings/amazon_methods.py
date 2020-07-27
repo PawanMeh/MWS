@@ -771,21 +771,24 @@ def get_shipments_details(after_date, before_date):
 	for shipment in shipment_events:
 		shipment_list = return_as_list(shipment.member)
 		for member in shipment_list:
+			pin_code = member.ShipFromAddress.PostalCode
 			frm_wh = get_warehouse(member.ShipFromAddress.PostalCode)
 			shipment_id = member.ShipmentId
 			date_str = member.ShipmentName
-			s_date = date_str.split(",")
+			s_date = date_str[5:22].split(",")
 			posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
-			se_args = {
-				"company" : mws_settings.company,
-				"naming_series" : "MAT-STE-.YYYY.-",
-				"purpose" : "Material Transfer",
-				"shipment_id" : shipment_id,
-				"posting_date" : posting_date,
-				"items" : [],
-				"additional_costs" : []
-			}
 			if frm_wh:
+				se_args = {
+					"company" : mws_settings.company,
+					"naming_series" : "MAT-STE-.YYYY.-",
+					"purpose" : "Material Transfer",
+					"shipment_id" : shipment_id,
+					"posting_date" : posting_date,
+					"from_warehouse": frm_wh,
+					"to_warehouse": mws_settings.target_warehouse,
+					"items" : [],
+					"additional_costs" : []
+				}
 				response = call_mws_method(shipments.list_shipment_details, shipment_id=shipment_id)
 				item_details = return_as_list(response.parsed.ItemData)
 				for item in item_details:
@@ -814,7 +817,9 @@ def get_shipments_details(after_date, before_date):
 							'description': ship_type_descr,
 							'amount': td.PartneredSmallParcelData.PartneredEstimate.Amount.Value
 						})
-			create_stock_entry(se_args)
+				create_stock_entry(se_args)
+			else:
+				frappe.msgprint("No Warehouse found for pin code {0} for Shipment ID {1}".format(pin_code, shipment_id))
 
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})
@@ -857,7 +862,9 @@ def create_stock_entry(args):
 		"naming_series": args.naming_series,
 		"purpose":args.purpose,
 		"shipment_id": args.shipment_id,
-		"posting_date": today(),
+		"posting_date": args.posting_date,
+		"from_warehouse": args.from_warehouse,
+		"to_warehouse": args.to_warehouse,
 		"items": args["items"],
 		"additional_costs": args["additional_costs"]
 	})
