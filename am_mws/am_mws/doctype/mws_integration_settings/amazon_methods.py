@@ -772,12 +772,15 @@ def get_shipments_details(after_date, before_date):
 		for member in shipment_list:
 			frm_wh = get_warehouse(member.ShipFromAddress.PostalCode)
 			shipment_id = member.ShipmentId
+			date_str = member.ShipmentName
+			s_date = date_str.split(",")
+			posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
 			se_args = {
 				"company" : mws_settings.company,
 				"naming_series" : "MAT-STE-.YYYY.-",
 				"purpose" : "Material Transfer",
 				"shipment_id" : shipment_id,
-				"posting_date" : today(),
+				"posting_date" : posting_date,
 				"items" : [],
 				"additional_costs" : []
 			}
