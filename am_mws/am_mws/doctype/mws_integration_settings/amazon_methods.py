@@ -814,9 +814,14 @@ def get_shipments_details(after_date, before_date):
 					tdetails = return_as_list(detail.TransportDetails)
 					for td in tdetails:
 						if 'PartneredSmallParcelData' in td.keys():
+							frappe.msgprint(shipment_id)
+							parcel_details = return_as_list(td.PartneredSmallParcelData)
+							amount = 0
+							for d in parcel_details:
+								amount += d.PartneredEstimate.Amount.Value
 							se_args['additional_costs'].append({
 								'description': ship_type_descr,
-								'amount': td.PartneredSmallParcelData.PartneredEstimate.Amount.Value
+								'amount': amount
 							})
 				create_stock_entry(se_args)
 			else:
