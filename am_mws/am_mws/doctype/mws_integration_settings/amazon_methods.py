@@ -870,6 +870,7 @@ def create_stock_entry(args):
 		"posting_date": args.posting_date,
 		"from_warehouse": args.from_warehouse,
 		"to_warehouse": args.to_warehouse,
+		"set_posting_time": 1,
 		"items": args["items"],
 		"additional_costs": args["additional_costs"]
 	})
