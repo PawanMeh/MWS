@@ -1020,7 +1020,7 @@ def create_sales_invoice(args):
 
 	except Exception as e:
 		frappe.log_error(message=e,
-			title="Create Sales Invoice: " + args.get("shipment_id"))
+			title="Create Sales Invoice: " + order_id)
 		return None
 
 def auto_submit_mws():
