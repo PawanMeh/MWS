@@ -697,7 +697,7 @@ def get_refund_details(posted_before, posted_after):
 						charges = []
 
 					if 'ItemFeeAdjustmentList' in shipment_item.keys():
-						fees = return_as_list(shipment_item.ItemFeeList.FeeComponent)
+						fees = return_as_list(shipment_item.ItemFeeAdjustmentList.FeeComponent)
 					else:
 						fees = []
 
