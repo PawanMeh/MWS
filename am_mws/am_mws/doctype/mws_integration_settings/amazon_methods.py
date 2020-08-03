@@ -676,8 +676,7 @@ def get_refund_details(posted_before, posted_after):
 							and market_place_order_id = %s
 					''', (market_place_order_id))
 		if customer:
-			s_date = date_str[5:22].split(",")
-			posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
+			posting_date = datetime.strptime(date_str[0:10], '%Y-%m-%d')
 			se_args = {
 				"company" : mws_settings.company,
 				"naming_series" : "AMZ-CR-",
