@@ -600,6 +600,7 @@ def get_charges_and_fees(market_place_order_id):
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 
 	shipment_event_list = return_as_list(response.parsed.FinancialEvents.ShipmentEventList)
+	
 	for shipment_event in shipment_event_list:
 		if shipment_event:
 			shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemList.ShipmentItem)
@@ -652,6 +653,107 @@ def get_charges_and_fees(market_place_order_id):
 						})
 
 	return charges_fees
+
+def get_refund_details(posted_before, posted_after):
+	finances = get_finances_instance()
+	response = call_mws_method(finances.list_financial_events, posted_before=posted_before, posted_after=posted_after)
+	shipment_event_list = return_as_list(response.parsed.FinancialEvents.RefundEventList)
+
+	#ret wh
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+	ret_wh = mws_settings.return_warehouse
+	
+	for shipment_event in shipment_event_list:
+		date_str = shipment_event.ShipmentEvent.PostedDate
+		market_place_order_id = shipment_event.ShipmentEvent.SellerOrderId
+		customer = frappe.db.sql('''
+						select
+							customer
+						from
+							`tabSales Invoice`
+						where
+							docstatus = 1 and is_return = 0
+							and market_place_order_id = %s
+					''', (market_place_order_id))
+		if customer:
+			s_date = date_str[5:22].split(",")
+			posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
+			se_args = {
+				"company" : mws_settings.company,
+				"naming_series" : "AMZ-CR-",
+				"posting_date" : posting_date,
+				"customer": customer[0][0],
+				"set_posting_time":1,
+				"market_place_order_id": market_place_order_id,
+				"items" : [],
+				"taxes_and_charges" : []
+			}
+			if shipment_event:
+				shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemAdjustmentList.ShipmentItem)
+				posting_date = shipment_event.ShipmentEvent.PostedDate
+				for shipment_item in shipment_item_list:
+					if 'ItemChargeAdjustmentList' in shipment_item.keys():
+						charges = return_as_list(shipment_item.ItemChargeAdjustmentList.ChargeComponent)
+					else:
+						charges = []
+
+					if 'ItemFeeAdjustmentList' in shipment_item.keys():
+						fees = return_as_list(shipment_item.ItemFeeList.FeeComponent)
+					else:
+						fees = []
+
+					if 'ItemTaxWithheldList' in shipment_item.keys():
+						taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent.TaxesWithheld.ChargeComponent)
+					else:
+						taxes_witheld = []
+
+					for charge in charges:
+						if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
+							charge_account = get_account(charge.ChargeType)
+							se_args['taxes_and_charges'].append({
+								"charge_type":"Actual",
+								"account_head": charge_account,
+								"tax_amount": charge.ChargeAmount.CurrencyAmount,
+								"description": charge.ChargeType + " for " + shipment_item.SellerSKU
+							})
+
+						if(charge.ChargeType == "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
+							se_args['items'].append({
+								"item_code": shipment_item.SellerSKU,
+								"item_name": shipment_item.SellerSKU,
+								"description": shipment_item.SellerSKU,
+								"rate": float(charge.ChargeAmount.CurrencyAmount) * -1,
+								"qty": -1,
+								"stock_uom": "Each",
+								"warehouse": ret_wh,
+								"conversion_factor": "1.0"
+							})
+
+					for fee in fees:
+						if float(fee.FeeAmount.CurrencyAmount) != 0:
+							fee_account = get_account(fee.FeeType)
+							se_args['taxes_and_charges'].append({
+								"charge_type":"Actual",
+								"account_head": fee_account,
+								"tax_amount": fee.FeeAmount.CurrencyAmount,
+								"description": fee.FeeType + " for " + shipment_item.SellerSKU
+							})
+
+					for tax in taxes_witheld:
+						if(tax.ChargeType == "MarketplaceFacilitatorTax-Principal"):
+							mws_settings = frappe.get_doc("MWS Integration Settings")
+							tax_account = mws_settings.market_place_tax_account
+							se_args['taxes_and_charges'].append({
+								"charge_type":"Actual",
+								"account_head": tax_account,
+								"tax_amount": tax.ChargeAmount.CurrencyAmount,
+								"description": tax.ChargeType + " for " + shipment_item.SellerSKU
+							})
+
+				create_sales_invoice(se_args)
+		else:
+			frappe.log_error(message="Corresponding Sales Invoice does not exist", 
+				title="Credit Invoice Error" + market_place_order_id)
 
 def get_order_create_label_jv(after_date):
 	warehouse = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mfn_warehouse")
@@ -888,6 +990,38 @@ def create_stock_entry(args):
 	except Exception as e:
 		frappe.log_error(message=e,
 			title="Create Stock Entry: " + args.get("shipment_id"))
+		return None
+
+def create_sales_invoice(args):
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+	args = frappe._dict(args)
+	order_id = args.market_place_order_id + "-RET"
+	se = frappe.get_doc({
+		"doctype": "Sales Invoice",
+		"naming_series": args.naming_series,
+		"customer":args.customer,
+		"market_place_order_id": order_id,
+		"posting_date": args.posting_date,
+		"due_date": args.posting_date,
+		"set_posting_time": 1,
+		"is_return": 1,
+		"items": args["items"],
+		"taxes_and_charges": args["taxes_and_charges"]
+	})
+
+	try:
+		if frappe.db.exists({'doctype': 'Sales Invoice','market_place_order_id': order_id}):
+			pass
+			#frappe.log_error(message="Unique Shipment ID check", title="Create Stock Entry: " + args.get("shipment_id") + "already exists")
+		else:
+			se.set_missing_values()
+			se.insert(ignore_mandatory=True)
+			if mws_settings.submit_credit_invoice:
+				se.submit()
+
+	except Exception as e:
+		frappe.log_error(message=e,
+			title="Create Sales Invoice: " + args.get("shipment_id"))
 		return None
 
 def auto_submit_mws():

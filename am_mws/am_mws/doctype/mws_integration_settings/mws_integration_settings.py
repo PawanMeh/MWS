@@ -28,6 +28,11 @@ class MWSIntegrationSettings(Document):
 		before_date = dateutil.parser.parse(self.fulfil_before_date).strftime("%Y-%m-%d")
 		shipments = get_shipments_details(after_date, before_date)
 
+	def get_refunds(self):
+		after_date = dateutil.parser.parse(self.refund_after_date).strftime("%Y-%m-%d")
+		before_date = dateutil.parser.parse(self.refund_before_date).strftime("%Y-%m-%d")
+		refunds = get_refund_details(before_date, after_date)
+
 def schedule_get_order_details():
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 
