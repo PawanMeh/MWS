@@ -749,7 +749,7 @@ def get_refund_details(posted_before, posted_after):
 								"description": tax.ChargeType + " for " + shipment_item.SellerSKU
 							})
 
-				create_sales_invoice(se_args)
+				create_return_invoice(se_args)
 		else:
 			frappe.log_error(message="Corresponding Sales Invoice does not exist", 
 				title="Credit Invoice Error" + market_place_order_id)
@@ -991,12 +991,13 @@ def create_stock_entry(args):
 			title="Create Stock Entry: " + args.get("shipment_id"))
 		return None
 
-def create_sales_invoice(args):
+def create_return_invoice(args):
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 	args = frappe._dict(args)
 	order_id = args.market_place_order_id + "-RET"
 	se = frappe.get_doc({
 		"doctype": "Sales Invoice",
+		"company": mws_settings.company,
 		"naming_series": args.naming_series,
 		"customer":args.customer,
 		"market_place_order_id": order_id,
