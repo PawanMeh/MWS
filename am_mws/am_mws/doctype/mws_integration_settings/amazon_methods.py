@@ -995,8 +995,6 @@ def create_return_invoice(args):
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 	args = frappe._dict(args)
 	order_id = args.market_place_order_id + "-RET"
-	frappe.msgprint(order_id)
-	frappe.msprint(args)
 	se = frappe.get_doc({
 		"doctype": "Sales Invoice",
 		"company": mws_settings.company,
@@ -1008,13 +1006,13 @@ def create_return_invoice(args):
 		"set_posting_time": 1,
 		"is_return": 1,
 		"items": args["items"],
-		"taxes_and_charges": args["taxes_and_charges"]
+		"taxes": args["taxes_and_charges"]
 	})
 
 	try:
 		if frappe.db.exists({'doctype': 'Sales Invoice','market_place_order_id': order_id}):
 			pass
-			#frappe.log_error(message="Unique Shipment ID check", title="Create Stock Entry: " + args.get("shipment_id") + "already exists")
+			#frappe.log_error(message="Unique Credit Invoice check", title="Create Sales Invoice: " + market_place_order_id + "already exists")
 		else:
 			se.set_missing_values()
 			se.insert(ignore_mandatory=True)
