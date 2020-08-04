@@ -995,6 +995,8 @@ def create_return_invoice(args):
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 	args = frappe._dict(args)
 	order_id = args.market_place_order_id + "-RET"
+	frappe.msgprint(order_id)
+	frappe.msprint(args)
 	se = frappe.get_doc({
 		"doctype": "Sales Invoice",
 		"company": mws_settings.company,
