@@ -685,7 +685,7 @@ def get_refund_details(posted_before, posted_after):
 				"set_posting_time":1,
 				"market_place_order_id": market_place_order_id,
 				"items" : [],
-				"taxes_and_charges" : []
+				"taxes" : []
 			}
 			if shipment_event:
 				shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemAdjustmentList.ShipmentItem)
@@ -709,10 +709,10 @@ def get_refund_details(posted_before, posted_after):
 					for charge in charges:
 						if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
 							charge_account = get_account(charge.ChargeType)
-							se_args['taxes_and_charges'].append({
+							se_args['taxes'].append({
 								"charge_type":"Actual",
 								"account_head": charge_account,
-								"tax_amount": charge.ChargeAmount.CurrencyAmount,
+								"tax_amount": charge.ChargeAmount.CurrencyAmount or 0,
 								"description": charge.ChargeType + " for " + shipment_item.SellerSKU
 							})
 
@@ -721,7 +721,7 @@ def get_refund_details(posted_before, posted_after):
 								"item_code": shipment_item.SellerSKU,
 								"item_name": shipment_item.SellerSKU,
 								"description": shipment_item.SellerSKU,
-								"rate": float(charge.ChargeAmount.CurrencyAmount) * -1,
+								"rate": float(charge.ChargeAmount.CurrencyAmount) * -1 or 0,
 								"qty": -1,
 								"stock_uom": "Each",
 								"warehouse": ret_wh,
@@ -731,10 +731,10 @@ def get_refund_details(posted_before, posted_after):
 					for fee in fees:
 						if float(fee.FeeAmount.CurrencyAmount) != 0:
 							fee_account = get_account(fee.FeeType)
-							se_args['taxes_and_charges'].append({
+							se_args['taxes'].append({
 								"charge_type":"Actual",
 								"account_head": fee_account,
-								"tax_amount": fee.FeeAmount.CurrencyAmount,
+								"tax_amount": fee.FeeAmount.CurrencyAmount or 0,
 								"description": fee.FeeType + " for " + shipment_item.SellerSKU
 							})
 
@@ -742,10 +742,10 @@ def get_refund_details(posted_before, posted_after):
 						if(tax.ChargeType == "MarketplaceFacilitatorTax-Principal"):
 							mws_settings = frappe.get_doc("MWS Integration Settings")
 							tax_account = mws_settings.market_place_tax_account
-							se_args['taxes_and_charges'].append({
+							se_args['taxes'].append({
 								"charge_type":"Actual",
 								"account_head": tax_account,
-								"tax_amount": tax.ChargeAmount.CurrencyAmount,
+								"tax_amount": tax.ChargeAmount.CurrencyAmount or 0,
 								"description": tax.ChargeType + " for " + shipment_item.SellerSKU
 							})
 
@@ -1006,7 +1006,7 @@ def create_return_invoice(args):
 		"set_posting_time": 1,
 		"is_return": 1,
 		"items": args["items"],
-		"taxes": args["taxes_and_charges"]
+		"taxes": args["taxes"]
 	})
 
 	try:
