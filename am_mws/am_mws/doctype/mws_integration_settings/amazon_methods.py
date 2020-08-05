@@ -716,18 +716,6 @@ def get_refund_details(posted_before, posted_after):
 								"description": charge.ChargeType + " for " + shipment_item.SellerSKU
 							})
 
-						if(charge.ChargeType == "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
-							se_args['items'].append({
-								"item_code": shipment_item.SellerSKU,
-								"item_name": shipment_item.SellerSKU,
-								"description": shipment_item.SellerSKU,
-								"rate": float(charge.ChargeAmount.CurrencyAmount) * -1 or 0,
-								"qty": -1,
-								"stock_uom": "Each",
-								"warehouse": ret_wh,
-								"conversion_factor": "1.0"
-							})
-
 					for fee in fees:
 						if float(fee.FeeAmount.CurrencyAmount) != 0:
 							fee_account = get_account(fee.FeeType)
@@ -748,6 +736,27 @@ def get_refund_details(posted_before, posted_after):
 								"tax_amount": tax.ChargeAmount.CurrencyAmount or 0,
 								"description": tax.ChargeType + " for " + shipment_item.SellerSKU
 							})
+					invoices =	frappe.db.sql('''
+										select
+											sum(b.qty) as qty, sum(b.amount) as amount
+										from
+											`tabSales Invoice` a, `tabSales Invoice Item` b
+										where 
+											a.name = b.parent and
+											a.market_place_order_id = %s and
+											b.item_code = %s
+									''', (market_place_order_id, shipment_item.SellerSKU), as_dict=1)
+					for invoice in invoices:
+						se_args['items'].append({
+							"item_code": shipment_item.SellerSKU,
+							"item_name": shipment_item.SellerSKU,
+							"description": shipment_item.SellerSKU,
+							"rate": invoice['amount']  or 0,
+							"qty": invoice['qty'] * -1,
+							"stock_uom": "Each",
+							"warehouse": ret_wh,
+							"conversion_factor": "1.0"
+						})
 
 				create_return_invoice(se_args)
 		else:
