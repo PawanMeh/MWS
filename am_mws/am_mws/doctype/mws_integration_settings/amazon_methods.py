@@ -727,7 +727,7 @@ def get_refund_details(posted_before, posted_after):
 							})
 
 					for tax in taxes_witheld:
-						if(tax.ChargeType == "MarketplaceFacilitatorTax-Principal"):
+						if(tax.ChargeType == "MarketplaceFacilitatorTax-Shipping"):
 							mws_settings = frappe.get_doc("MWS Integration Settings")
 							tax_account = mws_settings.market_place_tax_account
 							se_args['taxes'].append({
@@ -1013,6 +1013,7 @@ def create_return_invoice(args):
 		"posting_date": args.posting_date,
 		"due_date": args.posting_date,
 		"set_posting_time": 1,
+		"selling_price_list": "Standard Selling",
 		"is_return": 1,
 		"items": args["items"],
 		"taxes": args["taxes"]
@@ -1024,7 +1025,7 @@ def create_return_invoice(args):
 			#frappe.log_error(message="Unique Credit Invoice check", title="Create Sales Invoice: " + market_place_order_id + "already exists")
 		else:
 			se.set_missing_values()
-			se.insert(ignore_mandatory=True)
+			se.insert(ignore_mandatory=True, ignore_permissions=True)
 			if mws_settings.submit_credit_invoice:
 				se.submit()
 
