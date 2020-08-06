@@ -664,8 +664,9 @@ def get_refund_details(posted_before, posted_after):
 	ret_wh = mws_settings.return_warehouse
 	
 	for shipment_event in shipment_event_list:
-		date_str = shipment_event.ShipmentEvent.PostedDate
 		market_place_order_id = shipment_event.ShipmentEvent.SellerOrderId
+		frappe.msgprint(market_place_order_id)
+		date_str = shipment_event.ShipmentEvent.PostedDate
 		customer = frappe.db.sql('''
 						select
 							customer
