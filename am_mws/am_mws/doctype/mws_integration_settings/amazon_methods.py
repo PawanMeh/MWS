@@ -692,7 +692,6 @@ def get_orders_create_refund(after_date):
 		frappe.log_error(title="create_refund" + "-" + amazon_order_id, message=e)
 
 def get_refund_details(market_place_order_id):
-	frappe.msgprint(market_place_order_id)
 	finances = get_finances_instance()
 	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 	shipment_event_list = return_as_list(response.parsed.FinancialEvents.RefundEventList)
@@ -702,8 +701,8 @@ def get_refund_details(market_place_order_id):
 	ret_wh = mws_settings.return_warehouse
 
 	for shipment_event in shipment_event_list:
-		market_place_order_id = shipment_event.ShipmentEvent.SellerOrderId
-		date_str = shipment_event.ShipmentEvent.PostedDate
+		market_place_order_id = shipment_event.SellerOrderId
+		date_str = shipment_event.PostedDate
 		customer = frappe.db.sql('''
 						select
 							customer
@@ -726,7 +725,7 @@ def get_refund_details(market_place_order_id):
 				"taxes" : []
 			}
 			if shipment_event:
-				shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemAdjustmentList.ShipmentItem)	
+				shipment_item_list = return_as_list(shipment_event.ShipmentItemAdjustmentList.ShipmentItem)	
 				for shipment_item in shipment_item_list:
 					if 'ItemChargeAdjustmentList' in shipment_item.keys():
 						charges = return_as_list(shipment_item.ItemChargeAdjustmentList.ChargeComponent)
