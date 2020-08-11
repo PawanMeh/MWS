@@ -654,9 +654,46 @@ def get_charges_and_fees(market_place_order_id):
 
 	return charges_fees
 
-def get_refund_details(posted_before, posted_after):
+def get_orders_create_refund(after_date):
+	try:
+		orders = get_orders_instance()
+		statuses = ["PartiallyShipped", "Unshipped", "Shipped", "Canceled"]
+		mws_settings = frappe.get_doc("MWS Integration Settings")
+		market_place_list = return_as_list(mws_settings.market_place_id)
+
+		orders_response = call_mws_method(orders.list_orders, marketplaceids=market_place_list, 
+			fulfillment_channels=["MFN", "AFN"], 
+			lastupdatedafter=after_date,	
+			orderstatus=statuses,
+			max_results='50')
+
+		while True:
+			orders_list = []
+
+			if "Order" in orders_response.parsed.Orders:
+				orders_list = return_as_list(orders_response.parsed.Orders.Order)
+
+			if len(orders_list) == 0:
+				break
+
+			for order in orders_list:
+				get_refund_details(order, after_date)
+
+			if not "NextToken" in orders_response.parsed:
+				break
+
+			next_token = orders_response.parsed.NextToken
+			orders_response = call_mws_method(orders.list_orders_by_next_token, next_token)
+
+		return "Success"
+
+	except Exception as e:
+		frappe.log_error(title="create_invoice", message=e)
+
+def get_refund_details(order_json, posted_after):
+	
 	finances = get_finances_instance()
-	response = call_mws_method(finances.list_financial_events, posted_before=posted_before, posted_after=posted_after)
+	response = call_mws_method(finances.list_financial_events, amazon_order_id=order_json.AmazonOrderId)
 	shipment_event_list = return_as_list(response.parsed.FinancialEvents.RefundEventList)
 
 	#ret wh
@@ -665,7 +702,6 @@ def get_refund_details(posted_before, posted_after):
 
 	for shipment_event in shipment_event_list:
 		market_place_order_id = shipment_event.ShipmentEvent.SellerOrderId
-		frappe.msgprint(market_place_order_id)
 		date_str = shipment_event.ShipmentEvent.PostedDate
 		customer = frappe.db.sql('''
 						select
