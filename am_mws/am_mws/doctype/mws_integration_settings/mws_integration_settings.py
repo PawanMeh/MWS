@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 import dateutil
-from amazon_methods import get_products_details, get_orders, get_order_create_invoice, get_order_create_label_jv, auto_submit_mws, get_shipments_details, get_refund_details
+from amazon_methods import get_products_details, get_orders, get_order_create_invoice, get_order_create_label_jv, auto_submit_mws, get_shipments_details, get_orders_create_refund
 
 class MWSIntegrationSettings(Document):
 	def get_products_details(self):
