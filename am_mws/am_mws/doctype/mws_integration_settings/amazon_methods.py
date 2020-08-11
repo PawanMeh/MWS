@@ -677,8 +677,7 @@ def get_orders_create_refund(after_date):
 				break
 
 			for order in orders_list:
-				frappe.msgprint("get refunds")
-				get_refund_details(order, after_date)
+				get_refund_details(order.AmazonOrderId)
 
 			if not "NextToken" in orders_response.parsed:
 				break
@@ -691,10 +690,10 @@ def get_orders_create_refund(after_date):
 	except Exception as e:
 		frappe.log_error(title="create_invoice", message=e)
 
-def get_refund_details(order_json, posted_after):
-	
+def get_refund_details(market_place_order_id):
+	frappe.msgprint(market_place_order_id)
 	finances = get_finances_instance()
-	response = call_mws_method(finances.list_financial_events, amazon_order_id=order_json.AmazonOrderId)
+	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
 	shipment_event_list = return_as_list(response.parsed.FinancialEvents.RefundEventList)
 
 	#ret wh
