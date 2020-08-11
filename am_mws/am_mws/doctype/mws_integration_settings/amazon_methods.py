@@ -677,7 +677,8 @@ def get_orders_create_refund(after_date):
 				break
 
 			for order in orders_list:
-				get_refund_details(order.AmazonOrderId)
+				amazon_order_id = order.AmazonOrderId
+				get_refund_details(amazon_order_id)
 
 			if not "NextToken" in orders_response.parsed:
 				break
@@ -688,7 +689,7 @@ def get_orders_create_refund(after_date):
 		return "Success"
 
 	except Exception as e:
-		frappe.log_error(title="create_invoice", message=e)
+		frappe.log_error(title="create_refund" + "-" + amazon_order_id, message=e)
 
 def get_refund_details(market_place_order_id):
 	frappe.msgprint(market_place_order_id)
@@ -702,7 +703,6 @@ def get_refund_details(market_place_order_id):
 
 	for shipment_event in shipment_event_list:
 		market_place_order_id = shipment_event.ShipmentEvent.SellerOrderId
-		frappe.msgprint(market_place_order_id)
 		date_str = shipment_event.ShipmentEvent.PostedDate
 		customer = frappe.db.sql('''
 						select
