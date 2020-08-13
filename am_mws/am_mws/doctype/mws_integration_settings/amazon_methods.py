@@ -691,9 +691,9 @@ def get_orders_create_refund(after_date):
 	except Exception as e:
 		frappe.log_error(title="create_refund" + "-" + amazon_order_id, message=e)
 
-def get_refund_details(market_place_order_id):
+def get_refund_details(before_date, after_date):
 	finances = get_finances_instance()
-	response = call_mws_method(finances.list_financial_events, amazon_order_id=market_place_order_id)
+	response = call_mws_method(finances.list_financial_events, posted_after=after_date, posted_before=before_date)
 	shipment_event_list = return_as_list(response.parsed.FinancialEvents.RefundEventList)
 
 	#ret wh
