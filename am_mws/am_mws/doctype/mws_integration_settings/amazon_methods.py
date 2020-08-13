@@ -657,7 +657,8 @@ def get_charges_and_fees(market_place_order_id):
 def get_orders_create_refund(after_date):
 	try:
 		orders = get_orders_instance()
-		statuses = ["PartiallyShipped", "Unshipped", "Shipped", "Canceled"]
+		#statuses = ["PartiallyShipped", "Unshipped", "Shipped", "Canceled"]
+		statuses = ["Canceled"]
 		mws_settings = frappe.get_doc("MWS Integration Settings")
 		market_place_list = return_as_list(mws_settings.market_place_id)
 
