@@ -771,7 +771,8 @@ def get_refund_details(before_date, after_date):
 											})
 
 									for tax in taxes_witheld:
-										if(tax.ChargeType == "MarketplaceFacilitatorTax-Shipping"):
+										if((tax.ChargeType == "MarketplaceFacilitatorTax-Shipping")
+											or (tax.ChargeType == "MarketplaceFacilitatorTax-Principal")):
 											mws_settings = frappe.get_doc("MWS Integration Settings")
 											tax_account = mws_settings.market_place_tax_account
 											se_args['taxes'].append({
