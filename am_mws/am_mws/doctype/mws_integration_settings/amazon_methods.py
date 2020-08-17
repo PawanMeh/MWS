@@ -1071,12 +1071,18 @@ def create_return_invoice(args):
 		else:
 			se.set_missing_values()
 			se.insert(ignore_mandatory=True, ignore_permissions=True)
+			mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
+			se.append('payments', {"mode_of_payment": mode_of_payment, 
+									"amount": se.outstanding_amount, 
+									"base_amount":se.outstanding_amount})
+			se.paid_amount = se.outstanding_amount
+			se.save(ignore_permissions=True)
 			if mws_settings.submit_credit_invoice:
 				se.submit()
 
 	except Exception as e:
 		frappe.log_error(message=e,
-			title="Create Sales Invoice: " + order_id)
+			title="Create Sales Return Invoice: " + order_id)
 		return None
 
 def auto_submit_mws():
