@@ -1060,6 +1060,8 @@ def create_return_invoice(args):
 		"set_posting_time": 1,
 		"selling_price_list": "Standard Selling",
 		"is_return": 1,
+		"is_pos": 1,
+		"pos_profile": "Amazon FBA",
 		"items": args["items"],
 		"taxes": args["taxes"]
 	})
