@@ -1075,9 +1075,9 @@ def create_return_invoice(args):
 			se.insert(ignore_mandatory=True, ignore_permissions=True)
 			mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
 			se.append('payments', {"mode_of_payment": mode_of_payment, 
-									"amount": se.outstanding_amount, 
-									"base_amount":se.outstanding_amount})
-			se.paid_amount = se.outstanding_amount
+									"amount": se.grand_total, 
+									"base_amount":se.grand_total})
+			se.paid_amount = se.grand_total
 			se.outstanding_amount = 0
 			se.save(ignore_permissions=True)
 			if mws_settings.submit_credit_invoice:
