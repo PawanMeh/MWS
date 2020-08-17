@@ -1077,7 +1077,7 @@ def create_return_invoice(args):
 			se.append('payments', {"mode_of_payment": mode_of_payment, 
 									"amount": -1 * se.outstanding_amount, 
 									"base_amount":-1 * se.outstanding_amount})
-			se.paid_amount = se.outstanding_amount
+			se.paid_amount = -1 * se.outstanding_amount
 			se.save(ignore_permissions=True)
 			if mws_settings.submit_credit_invoice:
 				se.submit()
