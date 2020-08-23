@@ -731,6 +731,7 @@ def get_refund_details(before_date, after_date):
 								"items" : [],
 								"taxes" : []
 							}
+							create_return = False
 							if shipment_event:
 								#shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemAdjustmentList.ShipmentItem)
 								shipment_item_list = return_as_list(event.ShipmentItemAdjustmentList.ShipmentItem)
@@ -750,7 +751,6 @@ def get_refund_details(before_date, after_date):
 									else:
 										taxes_witheld = []
 
-									create_return = False
 									for charge in charges:
 										if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
 											charge_account = get_account(charge.ChargeType)
