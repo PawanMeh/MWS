@@ -839,15 +839,16 @@ def create_return_jv(se_args):
 	cost_center = "Main - SHM"
 	tot_amount = 0
 	for charge in args.taxes:
-		je_doc.append("accounts", {
-			"account": charge['account_head'],
-			"cost_center": cost_center,
-			"debit_in_account_currency": charge['tax_amount'],
-			"debit": charge['tax_amount'],
-			"credit_in_account_currency": 0,
-			"credit": 0
-		})
-		tot_amount += flt(charge['tax_amount'])
+		if flt(charge['tax_amount']) < 0:
+			je_doc.append("accounts", {
+				"account": charge['account_head'],
+				"cost_center": cost_center,
+				"debit_in_account_currency": flt(charge['tax_amount']) * -1,
+				"debit": flt(charge['tax_amount']) * -1,
+				"credit_in_account_currency": 0,
+				"credit": 0
+			})
+			tot_amount += flt(charge['tax_amount']) * -1
 	je_doc.append("accounts", {
 		"account": credit_account[0][0],
 		"cost_center": cost_center,
