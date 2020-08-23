@@ -750,6 +750,7 @@ def get_refund_details(before_date, after_date):
 									else:
 										taxes_witheld = []
 
+									create_return = False
 									for charge in charges:
 										if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
 											charge_account = get_account(charge.ChargeType)
@@ -759,6 +760,9 @@ def get_refund_details(before_date, after_date):
 												"tax_amount": charge.ChargeAmount.CurrencyAmount or 0,
 												"description": charge.ChargeType + " for " + shipment_item.SellerSKU
 											})
+										if charge.ChargeType == "Principal":
+											create_return = True
+										
 
 									for fee in fees:
 										if float(fee.FeeAmount.CurrencyAmount) != 0:
@@ -802,11 +806,65 @@ def get_refund_details(before_date, after_date):
 											"warehouse": ret_wh,
 											"conversion_factor": "1.0"
 										})
-
-								create_return_invoice(se_args)
+								if create_return:
+									create_return_invoice(se_args)
+								else:
+									create_return_jv(se_args)
 						else:
 							frappe.log_error(message="Corresponding Sales Invoice does not exist", 
 								title="Credit Invoice Error" + market_place_order_id)
+
+def create_return_jv(se_args):
+	company = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "company")
+	mode_of_payment = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mode_of_payment")
+	args = frappe._dict(se_args)
+	#credit mop
+	#debit charges account
+	credit_account = frappe.db.sql('''
+						select
+							default_account
+						from
+							`tabMode of Payment Account`
+						where
+							company = %s and
+							parent = %s
+						''', (company, mode_of_payment))
+	#create jv
+	je_doc = frappe.new_doc("Journal Entry")
+	je_doc.company = company
+	je_doc.voucher_type = "Journal Entry"
+	je_doc.cheque_no = args.market_place_order_id
+	je_doc.posting_date = args.posting_date
+	je_doc.cheque_date = args.posting_date
+	cost_center = "Main - SHM"
+	tot_amount = 0
+	for charge in args.taxes:
+		je_doc.append("accounts", {
+			"account": charge['account_head'],
+			"cost_center": cost_center,
+			"debit_in_account_currency": charge['tax_amount'],
+			"debit": charge['tax_amount'],
+			"credit_in_account_currency": 0,
+			"credit": 0
+		})
+		tot_amount += charge['tax_amount']
+		je_doc.append("accounts", {
+			"account": credit_account[0][0],
+			"cost_center": cost_center,
+			"debit_in_account_currency": 0,
+			"debit": 0,
+			"credit_in_account_currency": tot_amount,
+			"credit": tot_amount
+		})
+	try:
+		je_doc.insert(ignore_permissions=True)
+		if je_doc.total_debit == 0 and je_doc.total_credit == 0:
+			frappe.delete_doc('Journal Entry', je_doc.name)
+		else:
+			return je_doc.name
+	except Exception as e:
+		frappe.log_error(message=e, title="Return JV Error" + je_doc.cheque_no + je_doc.posting_date.strftime('%Y-%m-%d'))
+
 
 def get_order_create_label_jv(after_date):
 	warehouse = frappe.db.get_value("MWS Integration Settings", "MWS Integration Settings", "mfn_warehouse")
