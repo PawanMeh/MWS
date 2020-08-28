@@ -751,6 +751,11 @@ def get_refund_details(before_date, after_date):
 									else:
 										taxes_witheld = []
 
+									if 'PromotionAdjustmentList' in shipment_item.keys():
+										promotions_adj = return_as_list(shipment_item.PromotionAdjustmentList.Promotion)
+									else:
+										promotions_adj = []
+
 									for charge in charges:
 										if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
 											charge_account = get_account(charge.ChargeType)
@@ -785,6 +790,17 @@ def get_refund_details(before_date, after_date):
 												"tax_amount": tax.ChargeAmount.CurrencyAmount or 0,
 												"description": tax.ChargeType + " for " + shipment_item.SellerSKU
 											})
+
+									for promotion in promotions_adj:
+										if(promotion.PromotionType == "PromotionMetaDataDefinitionValue"):
+											charge_account = get_account(promotion.PromotionType)
+											se_args['taxes'].append({
+												"charge_type":"Actual",
+												"account_head": charge_account,
+												"tax_amount": promotion.PromotionAmount.CurrencyAmount or 0,
+												"description": promotion.PromotionType + " for " + shipment_item.SellerSKU
+											})
+
 									invoices =	frappe.db.sql('''
 														select
 															sum(b.qty) as qty, sum(b.amount) as amount
