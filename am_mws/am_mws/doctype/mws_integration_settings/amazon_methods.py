@@ -867,15 +867,15 @@ def create_return_jv(se_args):
 					"credit_in_account_currency": 0,
 					"credit": 0
 				})
-				tot_amount += flt(charge['tax_amount']) * -1
-		je_doc.append("accounts", {
-			"account": credit_account[0][0],
-			"cost_center": cost_center,
-			"debit_in_account_currency": 0,
-			"debit": 0,
-			"credit_in_account_currency": tot_amount,
-			"credit": tot_amount
-		})
+			else:
+				je_doc.append("accounts", {
+					"account": credit_account[0][0],
+					"cost_center": cost_center,
+					"debit_in_account_currency": 0,
+					"debit": 0,
+					"credit_in_account_currency": tot_amount,
+					"credit": tot_amount
+				})
 		try:
 			je_doc.insert(ignore_permissions=True)
 			if je_doc.total_debit == 0 and je_doc.total_credit == 0:
