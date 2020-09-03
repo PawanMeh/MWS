@@ -869,11 +869,11 @@ def create_return_jv(se_args):
 				})
 			else:
 				je_doc.append("accounts", {
-					"account": credit_account[0][0],
+					"account": charge['account_head'],
 					"cost_center": cost_center,
 					"debit_in_account_currency": 0,
 					"debit": 0,
-					"credit_in_account_currency": tot_amount,
+					"credit_in_account_currency": flt(charge['tax_amount']),
 					"credit": tot_amount
 				})
 		try:
