@@ -659,6 +659,10 @@ class Fulfilment(MWS):
 		data.update(self.enumerate_param('ShipmentStatusList.member.', statuses))
 		return self.make_request(data)
 
+	def list_inbound_shipments_by_next_token(self, token):
+		data = dict(Action='ListInboundShipmentsByNextToken', NextToken=token)
+		return self.make_request(data)
+
 	def list_shipment_details(self , shipment_id=None, max_results='100'):
 
 		data = dict(Action='ListInboundShipmentItems',

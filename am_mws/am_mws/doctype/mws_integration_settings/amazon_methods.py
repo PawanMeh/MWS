@@ -1009,6 +1009,7 @@ def get_shipments_details(after_date, before_date):
 			frm_wh = get_warehouse(member.ShipFromAddress.PostalCode)
 			shipment_id = member.ShipmentId
 			#check if shipment ID already exists
+			frappe.msgprint("Shipment ID(s) {1}".format(shipment_id))
 			shipment_se = frappe.db.sql('''
 							select
 								'X'
@@ -1072,6 +1073,107 @@ def get_shipments_details(after_date, before_date):
 					create_stock_entry(se_args)
 				else:
 					frappe.msgprint("No Warehouse found for pin code {0} for Shipment ID {1}".format(pin_code, shipment_id))
+
+def create_shipment_se(shipment_events):
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+	for shipment in shipment_events:
+		shipment_list = return_as_list(shipment.member)
+		for member in shipment_list:
+			pin_code = member.ShipFromAddress.PostalCode
+			frm_wh = get_warehouse(member.ShipFromAddress.PostalCode)
+			shipment_id = member.ShipmentId
+			#check if shipment ID already exists
+			#frappe.msgprint("Shipment ID(s) {1}".format(shipment_id))
+			shipment_se = frappe.db.sql('''
+							select
+								'X'
+							from
+								`tabStock Entry`
+							where
+								shipment_id = %s
+							''', (shipment_id), as_list=1)
+			if shipment_se:
+				pass
+			else:
+				date_str = member.ShipmentName
+				s_date = date_str[5:22].split(",")
+				posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
+				if frm_wh:
+					se_args = {
+						"company" : mws_settings.company,
+						"naming_series" : "MAT-STE-.YYYY.-",
+						"purpose" : "Material Transfer",
+						"shipment_id" : shipment_id,
+						"posting_date" : posting_date,
+						"from_warehouse": frm_wh,
+						"to_warehouse": mws_settings.target_warehouse,
+						"items" : [],
+						"additional_costs" : []
+					}
+					response = call_mws_method(shipments.list_shipment_details, shipment_id=shipment_id)
+					item_details = return_as_list(response.parsed.ItemData)
+					for item in item_details:
+						item_list = return_as_list(item.member)
+						for item_member in item_list:
+							se_args['items'].append({
+								's_warehouse': frm_wh,
+								't_warehouse': mws_settings.target_warehouse,
+								'item_code': item_member.SellerSKU,
+								'qty': item_member.QuantityShipped,
+								'uom': 'Unit'
+							})
+					response = call_mws_method(shipments.list_transport_details, shipment_id=shipment_id)
+					transport_details = return_as_list(response.parsed.TransportContent)
+					for detail in transport_details:
+						ship_type_descr = ""
+						if detail.TransportHeader.ShipmentType == "SP":
+							ship_type_descr = "Small Parcel"
+						elif detail.TransportHeader.ShipmentType == "LTL":
+							ship_type_descr = "Less Than Truckload"
+						elif detail.TransportHeader.ShipmentType == "FTL":
+							ship_type_descr = "Full Truckload"
+						tdetails = return_as_list(detail.TransportDetails)
+						for td in tdetails:
+							if 'PartneredSmallParcelData' in td.keys():
+								parcel_details = return_as_list(td.PartneredSmallParcelData)
+								amount = 0
+								for d in parcel_details:
+									if 'PartneredEstimate' in td.keys():
+										amount += flt(d.PartneredEstimate.Amount.Value)
+								se_args['additional_costs'].append({
+									'description': ship_type_descr,
+									'amount': amount
+								})
+					create_stock_entry(se_args)
+				else:
+					frappe.msgprint("No Warehouse found for pin code {0} for Shipment ID {1}".format(pin_code, shipment_id))
+
+def get_shipments(after_date, before_date):
+	try:
+		mws_settings = frappe.get_doc("MWS Integration Settings")
+		shipments = get_shipments_instance()
+		status_list = ["SHIPPED","RECEIVING","IN_TRANSIT","DELIVERED","CHECKED_IN","CLOSED"]
+		response = call_mws_method(shipments.list_inbound_shipments, posted_after=after_date, posted_before=before_date, statuses = status_list)
+
+		while True:
+			shipment_events = []
+			shipment_events = return_as_list(response.parsed.ShipmentData)
+
+			if len(shipment_events) == 0:
+				break
+
+			create_shipment_se(shipment_events)
+
+			if not "NextToken" in response.parsed:
+				break
+
+			next_token = response.parsed.NextToken
+			response = call_mws_method(shipments.list_inbound_shipments_by_next_token, next_token)
+
+		return "Success"
+
+	except Exception as e:
+		frappe.log_error(title="get_shipments", message=e)
 
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})
