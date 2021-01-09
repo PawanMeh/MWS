@@ -26,7 +26,7 @@ class MWSIntegrationSettings(Document):
 	def get_shipments(self):
 		after_date = dateutil.parser.parse(self.fulfil_after_date).strftime("%Y-%m-%d")
 		before_date = dateutil.parser.parse(self.fulfil_before_date).strftime("%Y-%m-%d")
-		shipments = get_shipments_details(after_date, before_date)
+		shipments = get_shipments(after_date, before_date)
 
 	def get_refunds(self):
 		after_date = dateutil.parser.parse(self.refund_after_date).strftime("%Y-%m-%d")
