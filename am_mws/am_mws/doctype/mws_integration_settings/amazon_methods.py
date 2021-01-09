@@ -1110,6 +1110,7 @@ def create_shipment_se(shipment_events):
 						"items" : [],
 						"additional_costs" : []
 					}
+					shipments = get_shipments_instance()
 					response = call_mws_method(shipments.list_shipment_details, shipment_id=shipment_id)
 					item_details = return_as_list(response.parsed.ItemData)
 					for item in item_details:
