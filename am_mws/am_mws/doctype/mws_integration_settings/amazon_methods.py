@@ -1093,9 +1093,8 @@ def create_shipment_se(shipment_events):
 									shipment_id = %s
 								''', (shipment_id), as_list=1)
 				if shipment_se:
-					frappe.msgprint("Shipment ID(exists) {0}".format(shipment_id))
+					pass
 				else:
-					frappe.msgprint("Shipment ID(new) {0}".format(shipment_id))
 					date_str = member.ShipmentName
 					s_date = date_str[5:22].split(",")
 					posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
