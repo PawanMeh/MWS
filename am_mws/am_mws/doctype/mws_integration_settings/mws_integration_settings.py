@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 import dateutil
-from amazon_methods import get_products_details, get_orders, get_order_create_invoice, get_order_create_label_jv, auto_submit_mws, get_shipments_details, get_refund_details, get_shipments
+from amazon_methods import get_products_details, get_orders, get_order_create_invoice, get_order_create_label_jv, auto_submit_mws, get_shipments_details, get_refund_details, get_in_shipments
 
 class MWSIntegrationSettings(Document):
 	def get_products_details(self):
@@ -26,7 +26,7 @@ class MWSIntegrationSettings(Document):
 	def get_shipments(self):
 		after_date = dateutil.parser.parse(self.fulfil_after_date).strftime("%Y-%m-%d")
 		before_date = dateutil.parser.parse(self.fulfil_before_date).strftime("%Y-%m-%d")
-		shipments = get_shipments(after_date, before_date)
+		shipments = get_in_shipments(after_date, before_date)
 
 	def get_refunds(self):
 		after_date = dateutil.parser.parse(self.refund_after_date).strftime("%Y-%m-%d")
@@ -52,7 +52,7 @@ def schedule_get_order_details():
 		after_date = dateutil.parser.parse(mws_settings.fulfil_after_date).strftime("%Y-%m-%d")
 		before_date = dateutil.parser.parse(mws_settings.fulfil_before_date).strftime("%Y-%m-%d")
 		#shipments = get_shipments_details(after_date, before_date)
-		shipments = get_shipments(after_date, before_date)
+		shipments = get_in_shipments(after_date, before_date)
 
 def submit_mfn_invoices():
 	mws_settings = frappe.get_doc("MWS Integration Settings")

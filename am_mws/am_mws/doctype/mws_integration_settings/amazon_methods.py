@@ -1077,13 +1077,13 @@ def get_shipments_details(after_date, before_date):
 def create_shipment_se(shipment_events):
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 	for shipment in shipment_events:
+		frappe.msgprint("create shipment")
 		shipment_list = return_as_list(shipment.member)
 		for member in shipment_list:
 			pin_code = member.ShipFromAddress.PostalCode
 			frm_wh = get_warehouse(member.ShipFromAddress.PostalCode)
 			shipment_id = member.ShipmentId
 			#check if shipment ID already exists
-			#frappe.msgprint("Shipment ID(s) {1}".format(shipment_id))
 			shipment_se = frappe.db.sql('''
 							select
 								'X'
@@ -1095,6 +1095,7 @@ def create_shipment_se(shipment_events):
 			if shipment_se:
 				pass
 			else:
+				frappe.msgprint("Shipment ID(s) {0}".format(shipment_id))
 				date_str = member.ShipmentName
 				s_date = date_str[5:22].split(",")
 				posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
@@ -1148,7 +1149,7 @@ def create_shipment_se(shipment_events):
 				else:
 					frappe.msgprint("No Warehouse found for pin code {0} for Shipment ID {1}".format(pin_code, shipment_id))
 
-def get_shipments(after_date, before_date):
+def get_in_shipments(after_date, before_date):
 	try:
 		mws_settings = frappe.get_doc("MWS Integration Settings")
 		shipments = get_shipments_instance()
@@ -1173,7 +1174,7 @@ def get_shipments(after_date, before_date):
 		return "Success"
 
 	except Exception as e:
-		frappe.log_error(title="get_shipments", message=e)
+		frappe.log_error(title="get_in_shipments", message=e)
 
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})
