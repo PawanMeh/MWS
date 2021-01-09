@@ -1077,7 +1077,6 @@ def get_shipments_details(after_date, before_date):
 def create_shipment_se(shipment_events):
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 	for shipment in shipment_events:
-		frappe.msgprint("create shipment")
 		shipment_list = return_as_list(shipment.member)
 		for member in shipment_list:
 			pin_code = member.ShipFromAddress.PostalCode
@@ -1150,31 +1149,27 @@ def create_shipment_se(shipment_events):
 					frappe.msgprint("No Warehouse found for pin code {0} for Shipment ID {1}".format(pin_code, shipment_id))
 
 def get_in_shipments(after_date, before_date):
-	try:
-		mws_settings = frappe.get_doc("MWS Integration Settings")
-		shipments = get_shipments_instance()
-		status_list = ["SHIPPED","RECEIVING","IN_TRANSIT","DELIVERED","CHECKED_IN","CLOSED"]
-		response = call_mws_method(shipments.list_inbound_shipments, posted_after=after_date, posted_before=before_date, statuses = status_list)
+	mws_settings = frappe.get_doc("MWS Integration Settings")
+	shipments = get_shipments_instance()
+	status_list = ["SHIPPED","RECEIVING","IN_TRANSIT","DELIVERED","CHECKED_IN","CLOSED"]
+	response = call_mws_method(shipments.list_inbound_shipments, posted_after=after_date, posted_before=before_date, statuses = status_list)
 
-		while True:
-			shipment_events = []
-			shipment_events = return_as_list(response.parsed.ShipmentData)
+	while True:
+		shipment_events = []
+		shipment_events = return_as_list(response.parsed.ShipmentData)
 
-			if len(shipment_events) == 0:
-				break
+		if len(shipment_events) == 0:
+			break
 
-			create_shipment_se(shipment_events)
+		create_shipment_se(shipment_events)
 
-			if not "NextToken" in response.parsed:
-				break
+		if not "NextToken" in response.parsed:
+			break
 
-			next_token = response.parsed.NextToken
-			response = call_mws_method(shipments.list_inbound_shipments_by_next_token, next_token)
+		next_token = response.parsed.NextToken
+		response = call_mws_method(shipments.list_inbound_shipments_by_next_token, next_token)
 
-		return "Success"
-
-	except Exception as e:
-		frappe.log_error(title="get_in_shipments", message=e)
+	return "Success"
 
 def get_account(name):
 	existing_account = frappe.db.get_value("Account", {"account_name": "Amazon {0}".format(name)})
