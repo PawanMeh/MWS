@@ -603,55 +603,55 @@ def get_charges_and_fees(market_place_order_id):
 	
 	for shipment_event in shipment_event_list:
 		if shipment_event:
-			if 'ShipmentItemList' in shipment_event.keys():
-				shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemList.ShipmentItem)
+		#if 'ShipmentItemList' in shipment_event.keys():
+			shipment_item_list = return_as_list(shipment_event.ShipmentEvent.ShipmentItemList.ShipmentItem)
 
-				for shipment_item in shipment_item_list:
-					if 'ItemChargeList' in shipment_item.keys():
-						charges = return_as_list(shipment_item.ItemChargeList.ChargeComponent)
-					else:
-						charges = []
+			for shipment_item in shipment_item_list:
+				if 'ItemChargeList' in shipment_item.keys():
+					charges = return_as_list(shipment_item.ItemChargeList.ChargeComponent)
+				else:
+					charges = []
 
-					if 'ItemFeeList' in shipment_item.keys():
-						fees = return_as_list(shipment_item.ItemFeeList.FeeComponent)
-					else:
-						fees = []
+				if 'ItemFeeList' in shipment_item.keys():
+					fees = return_as_list(shipment_item.ItemFeeList.FeeComponent)
+				else:
+					fees = []
 
-					if 'ItemTaxWithheldList' in shipment_item.keys():
-						taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent.TaxesWithheld.ChargeComponent)
-					else:
-						taxes_witheld = []
+				if 'ItemTaxWithheldList' in shipment_item.keys():
+					taxes_witheld = return_as_list(shipment_item.ItemTaxWithheldList.TaxWithheldComponent.TaxesWithheld.ChargeComponent)
+				else:
+					taxes_witheld = []
 
-					for charge in charges:
-						if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
-							charge_account = get_account(charge.ChargeType)
-							charges_fees.get("charges").append({
-								"charge_type":"Actual",
-								"account_head": charge_account,
-								"tax_amount": charge.ChargeAmount.CurrencyAmount,
-								"description": charge.ChargeType + " for " + shipment_item.SellerSKU
-							})
+				for charge in charges:
+					if(charge.ChargeType != "Principal") and float(charge.ChargeAmount.CurrencyAmount) != 0:
+						charge_account = get_account(charge.ChargeType)
+						charges_fees.get("charges").append({
+							"charge_type":"Actual",
+							"account_head": charge_account,
+							"tax_amount": charge.ChargeAmount.CurrencyAmount,
+							"description": charge.ChargeType + " for " + shipment_item.SellerSKU
+						})
 
-					for fee in fees:
-						if float(fee.FeeAmount.CurrencyAmount) != 0:
-							fee_account = get_account(fee.FeeType)
-							charges_fees.get("fees").append({
-								"charge_type":"Actual",
-								"account_head": fee_account,
-								"tax_amount": fee.FeeAmount.CurrencyAmount,
-								"description": fee.FeeType + " for " + shipment_item.SellerSKU
-							})
-					#marketplace facilitator tax
-					for tax in taxes_witheld:
-						if(tax.ChargeType == "MarketplaceFacilitatorTax-Principal"):
-							mws_settings = frappe.get_doc("MWS Integration Settings")
-							tax_account = mws_settings.market_place_tax_account
-							charges_fees.get("taxwithheld").append({
-								"charge_type":"Actual",
-								"account_head": tax_account,
-								"tax_amount": tax.ChargeAmount.CurrencyAmount,
-								"description": tax.ChargeType + " for " + shipment_item.SellerSKU
-							})
+				for fee in fees:
+					if float(fee.FeeAmount.CurrencyAmount) != 0:
+						fee_account = get_account(fee.FeeType)
+						charges_fees.get("fees").append({
+							"charge_type":"Actual",
+							"account_head": fee_account,
+							"tax_amount": fee.FeeAmount.CurrencyAmount,
+							"description": fee.FeeType + " for " + shipment_item.SellerSKU
+						})
+				#marketplace facilitator tax
+				for tax in taxes_witheld:
+					if(tax.ChargeType == "MarketplaceFacilitatorTax-Principal"):
+						mws_settings = frappe.get_doc("MWS Integration Settings")
+						tax_account = mws_settings.market_place_tax_account
+						charges_fees.get("taxwithheld").append({
+							"charge_type":"Actual",
+							"account_head": tax_account,
+							"tax_amount": tax.ChargeAmount.CurrencyAmount,
+							"description": tax.ChargeType + " for " + shipment_item.SellerSKU
+						})
 
 	return charges_fees
 
