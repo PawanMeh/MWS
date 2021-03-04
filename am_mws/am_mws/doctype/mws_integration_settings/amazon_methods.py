@@ -1070,6 +1070,16 @@ def get_shipments_details(after_date, before_date):
 									'description': ship_type_descr,
 									'amount': amount
 								})
+							if 'PartneredLtlData' in td.keys():
+								parcel_details = return_as_list(td.PartneredLtlData)
+								amount = 0
+								for d in parcel_details:
+									if 'PartneredEstimate' in td.keys():
+										amount += flt(d.PartneredEstimate.Amount.Value)
+								se_args['additional_costs'].append({
+									'description': ship_type_descr,
+									'amount': amount
+								})
 					create_stock_entry(se_args)
 				else:
 					frappe.msgprint("No Warehouse found for pin code {0} for Shipment ID {1}".format(pin_code, shipment_id))
