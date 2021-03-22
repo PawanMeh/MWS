@@ -1061,21 +1061,18 @@ def get_shipments_details(after_date, before_date):
 						tdetails = return_as_list(detail.TransportDetails)
 						for td in tdetails:
 							if 'PartneredSmallParcelData' in td.keys():
-								parcel_details = return_as_list(td.PartneredSmallParcelData)
-								amount = 0
-								for d in parcel_details:
-									#if 'PartneredEstimate' in td.keys():
-									amount += flt(d.PartneredEstimate.Amount.Value)
+								#parcel_details = return_as_list(td.PartneredSmallParcelData)
+								#for d in parcel_details:
+								amount = flt(td.PartneredSmallParcelData.PartneredEstimate.Amount.Value)
 								se_args['additional_costs'].append({
 									'description': ship_type_descr,
 									'amount': amount
 								})
 							if 'PartneredLtlData' in td.keys():
-								parcel_details = return_as_list(td.PartneredLtlData)
-								amount = 0
-								for d in parcel_details:
-									#if 'PartneredEstimate' in td.keys():
-									amount += flt(d.PartneredEstimate.Amount.Value)
+								#parcel_details = return_as_list(td.PartneredLtlData)
+								#for d in parcel_details:
+								amount = flt(td.PartneredLtlData.PartneredEstimate.Amount.Value)
+								#amount += flt(d.PartneredEstimate.Amount.Value)
 								se_args['additional_costs'].append({
 									'description': ship_type_descr,
 									'amount': amount
