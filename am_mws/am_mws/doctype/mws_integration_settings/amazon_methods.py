@@ -1153,7 +1153,7 @@ def create_shipment_se(shipment_events):
 										'amount': amount
 									})
 								if 'PartneredLtlData' in td.keys():
-									parcel_details = return_as_list(td.PartneredSmallParcelData)
+									parcel_details = return_as_list(td.PartneredLtlData)
 									amount = 0
 									for d in parcel_details:
 										amount += flt(d.PartneredEstimate.Amount.Value)
