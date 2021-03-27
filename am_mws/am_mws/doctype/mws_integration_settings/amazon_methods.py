@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2018, hello@openetech.com and contributors
 # For license information, please see license.txt
-
 from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
@@ -824,7 +823,21 @@ def get_refund_details(before_date, after_date):
 											"conversion_factor": "1.0"
 										})
 								if create_return:
-									create_return_invoice(se_args)
+									draft_exists = frappe.db.sql('''
+													select
+														'X'
+													from
+														`tabSales Invoice`
+													where
+														docstatus = 0 and is_return = 0
+														and market_place_order_id = %s
+												''', (market_place_order_id))
+									if draft_exists:
+										create_draft = True
+										create_return_invoice(se_args,create_draft)
+									else:
+										create_draft = False
+										create_return_invoice(se_args,create_draft)
 								else:
 									create_return_jv(se_args)
 						else:
@@ -1251,7 +1264,7 @@ def create_stock_entry(args):
 			title="Create Stock Entry: " + args.get("shipment_id"))
 		return None
 
-def create_return_invoice(args):
+def create_return_invoice(args,create_draft):
 	mws_settings = frappe.get_doc("MWS Integration Settings")
 	args = frappe._dict(args)
 	order_id = args.market_place_order_id + "-RET"
@@ -1286,7 +1299,7 @@ def create_return_invoice(args):
 			se.outstanding_amount = 0
 			se.write_off_amount = 0
 			se.save(ignore_permissions=True)
-			if mws_settings.submit_credit_invoice:
+			if mws_settings.submit_credit_invoice and not create_draft:
 				se.submit()
 
 	except Exception as e:
