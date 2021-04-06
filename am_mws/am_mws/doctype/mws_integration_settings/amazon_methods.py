@@ -719,19 +719,33 @@ def get_refund_details(before_date, after_date):
 											docstatus = 1 and is_return = 0
 											and market_place_order_id = %s
 									''', (market_place_order_id))
-						return_exists = frappe.db.sql('''
+
+						invoice_no = frappe.db.sql('''
 										select
-											'X'
+											name
 										from
 											`tabSales Invoice`
 										where
-											docstatus != 2 and is_return = 1
+											docstatus = 1 and is_return = 0
 											and market_place_order_id = %s
 									''', (market_place_order_id))
+
+						if invoice_no:
+							return_exists = frappe.db.sql('''
+											select
+												'X'
+											from
+												`tabSales Invoice`
+											where
+												docstatus != 2 and is_return = 1
+												and return_against = %s
+										''', (invoice_no[0][0]))
+
 						if return_exists:
 							return_created = True
 						else:
 							return_created = False
+
 						if customer:
 							posting_date = datetime.strptime(date_str[0:10], '%Y-%m-%d')
 							se_args = {
@@ -853,7 +867,8 @@ def get_refund_details(before_date, after_date):
 											create_draft = False
 											create_return_invoice(se_args,create_draft)
 								else:
-									create_return_jv(se_args)
+									if not return_created:
+										create_return_jv(se_args)
 						else:
 							frappe.log_error(message="Corresponding Sales Invoice does not exist", 
 								title="Credit Invoice Error" + market_place_order_id)
