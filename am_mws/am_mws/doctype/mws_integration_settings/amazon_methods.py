@@ -719,6 +719,19 @@ def get_refund_details(before_date, after_date):
 											docstatus = 1 and is_return = 0
 											and market_place_order_id = %s
 									''', (market_place_order_id))
+						return_exists = frappe.db.sql('''
+										select
+											'X'
+										from
+											`tabSales Invoice`
+										where
+											docstatus != 2 and is_return = 1
+											and market_place_order_id = %s
+									''', (market_place_order_id))
+						if return_exists:
+							return_created = True
+						else:
+							return_created = False
 						if customer:
 							posting_date = datetime.strptime(date_str[0:10], '%Y-%m-%d')
 							se_args = {
@@ -832,12 +845,13 @@ def get_refund_details(before_date, after_date):
 														docstatus = 0 and is_return = 0
 														and market_place_order_id = %s
 												''', (market_place_order_id))
-									if draft_exists:
-										create_draft = True
-										create_return_invoice(se_args,create_draft)
-									else:
-										create_draft = False
-										create_return_invoice(se_args,create_draft)
+									if not return_created:
+										if draft_exists:
+											create_draft = True
+											create_return_invoice(se_args,create_draft)
+										else:
+											create_draft = False
+											create_return_invoice(se_args,create_draft)
 								else:
 									create_return_jv(se_args)
 						else:
