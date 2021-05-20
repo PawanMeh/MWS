@@ -1068,7 +1068,11 @@ def get_shipments_details(after_date, before_date):
 				try:
 					posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
 				except Exception as e:
-					frappe.log_error(message=e, title="Date format Error" + date_str)
+					try:
+						s_date = date_str[5:14].split(",")
+						posting_date = datetime.strptime(s_date[0], '%m/%d/%Y')
+					except Exception as e:
+						frappe.log_error(message=e, title="Date format Error" + date_str)
 
 				if frm_wh:
 					se_args = {
@@ -1152,7 +1156,11 @@ def create_shipment_se(shipment_events):
 					try:
 						posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
 					except Exception as e:
-						frappe.log_error(message=e, title="Date format Error" + date_str)
+						try:
+							s_date = date_str[5:14].split(",")
+							posting_date = datetime.strptime(s_date[0], '%m/%d/%Y')
+						except Exception as e:
+							frappe.log_error(message=e, title="Date format Error" + date_str)
 
 					if frm_wh:
 						se_args = {
