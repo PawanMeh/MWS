@@ -1067,7 +1067,7 @@ def get_shipments_details(after_date, before_date):
 				s_date = date_str[5:22].split(",")
 				try:
 					posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
-				except Exception as e:
+				except:
 					try:
 						s_date = date_str[5:14].split(",")
 						posting_date = datetime.strptime(s_date[0], '%m/%d/%Y')
@@ -1155,7 +1155,7 @@ def create_shipment_se(shipment_events):
 					s_date = date_str[5:22].split(",")
 					try:
 						posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
-					except Exception as e:
+					except:
 						try:
 							s_date = date_str[5:14].split(",")
 							posting_date = datetime.strptime(s_date[0], '%m/%d/%Y')
