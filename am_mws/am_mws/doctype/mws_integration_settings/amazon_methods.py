@@ -292,7 +292,7 @@ def get_orders_instance():
 
 def create_sales_order(order_json,after_date):
 	customer_name, contact = create_customer(order_json)
-	address = create_address(order_json, customer_name)
+	#address = create_address(order_json, customer_name)
 
 	market_place_order_id = order_json.AmazonOrderId
 	fulfillment_channel = order_json.FulfillmentChannel
@@ -348,7 +348,7 @@ def create_sales_order(order_json,after_date):
 
 def create_sales_invoice(order_json,after_date):
 	customer_name, contact = create_customer(order_json)
-	address = create_address(order_json, customer_name)
+	#address = create_address(order_json, customer_name)
 
 	market_place_order_id = order_json.AmazonOrderId
 	fulfillment_channel = order_json.FulfillmentChannel
@@ -1064,8 +1064,8 @@ def get_shipments_details(after_date, before_date):
 				pass
 			else:
 				date_str = member.ShipmentName
-				s_date = date_str[5:22].split(",")
-				posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
+				s_date = date_str[5:14].split(",")
+				posting_date = datetime.strptime(s_date[0], '%m/%d/%Y')
 				if frm_wh:
 					se_args = {
 						"company" : mws_settings.company,
@@ -1144,8 +1144,8 @@ def create_shipment_se(shipment_events):
 					pass
 				else:
 					date_str = member.ShipmentName
-					s_date = date_str[5:22].split(",")
-					posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
+					s_date = date_str[5:14].split(",")
+					posting_date = datetime.strptime(s_date[0], '%m/%d/%Y')
 					if frm_wh:
 						se_args = {
 							"company" : mws_settings.company,
