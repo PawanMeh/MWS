@@ -1064,8 +1064,8 @@ def get_shipments_details(after_date, before_date):
 				pass
 			else:
 				date_str = member.ShipmentName
-				s_date = date_str[5:14].split(",")
-				posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
+				s_date = date_str[5:22].split(",")
+				posting_date = datetime.strptime(s_date[0], '%m/%d/%Y')
 				if frm_wh:
 					se_args = {
 						"company" : mws_settings.company,
@@ -1144,8 +1144,8 @@ def create_shipment_se(shipment_events):
 					pass
 				else:
 					date_str = member.ShipmentName
-					s_date = date_str[5:14].split(",")
-					posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
+					s_date = date_str[5:22].split(",")
+					posting_date = datetime.strptime(s_date[0], '%m/%d/%Y')
 					if frm_wh:
 						se_args = {
 							"company" : mws_settings.company,
