@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 from __future__ import unicode_literals
 import frappe
+import re
 from frappe.model.document import Document
 import frappe, json, time, datetime, dateutil, math, csv, StringIO
 from datetime import datetime
@@ -1068,7 +1069,9 @@ def get_shipments_details(after_date, before_date):
 				try:
 					posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
 				except Exception as e:
-					frappe.log_error(message=e, title="Date format Error" + date_str + shipment_id)
+					res = re.findall(r'\(.*?\)', date_str)
+					s_date = res[0][1:11]
+					posting_date = datetime.strptime(s_date, '%m/%d/%Y')
 
 				if frm_wh:
 					se_args = {
@@ -1152,7 +1155,9 @@ def create_shipment_se(shipment_events):
 					try:
 						posting_date = datetime.strptime(s_date[0], '%m/%d/%y')
 					except Exception as e:
-						frappe.log_error(message=e, title="Date format Error" + date_str + shipment_id)
+						res = re.findall(r'\(.*?\)', date_str)
+						s_date = res[0][1:11]
+						posting_date = datetime.strptime(s_date, '%m/%d/%Y')
 
 					if frm_wh:
 						se_args = {
