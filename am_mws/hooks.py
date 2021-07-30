@@ -108,7 +108,7 @@ app_license = "MIT"
 # 	]
 # }
 scheduler_events = {
-		"hourly": [
+		"hourly_long": [
 			"am_mws.am_mws.doctype.mws_integration_settings.mws_integration_settings.update_refund_fulfil_dates",
 			"am_mws.am_mws.doctype.mws_integration_settings.mws_integration_settings.schedule_get_order_details"
 	],
