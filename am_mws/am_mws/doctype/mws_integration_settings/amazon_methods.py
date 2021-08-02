@@ -1200,7 +1200,8 @@ def create_shipment_se(shipment_events):
 									parcel_details = return_as_list(td.PartneredSmallParcelData)
 									amount = 0
 									for d in parcel_details:
-										amount += flt(d.PartneredEstimate.Amount.Value)
+										if 'PartneredEstimate' in d.keys():
+											amount += flt(d.PartneredEstimate.Amount.Value)
 									se_args['additional_costs'].append({
 										'description': ship_type_descr,
 										'amount': amount
@@ -1209,7 +1210,8 @@ def create_shipment_se(shipment_events):
 									parcel_details = return_as_list(td.PartneredLtlData)
 									amount = 0
 									for d in parcel_details:
-										amount += flt(d.PartneredEstimate.Amount.Value)
+										if 'PartneredEstimate' in d.keys():
+											amount += flt(d.PartneredEstimate.Amount.Value)
 									se_args['additional_costs'].append({
 										'description': ship_type_descr,
 										'amount': amount
